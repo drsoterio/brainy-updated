@@ -1,8 +1,3 @@
-"""
-brainy — 4-step ML training studio
-Teaches students how ML works by training image (VAE) or text (CharLSTM) models.
-Port 5008.
-"""
 import os
 # Must be set before torch/transformers import their native BLAS/OMP backends
 os.environ.setdefault('TOKENIZERS_PARALLELISM',      'false')
