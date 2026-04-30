@@ -88,6 +88,17 @@ class SmartPromptTrainer:
     def add_text(self, text: str) -> None:
         self._texts.append(text.strip())
 
+    def remove_text(self, index: int) -> None:
+        if index < 0 or index >= len(self._texts):
+            raise IndexError('Text index out of range')
+        self._texts.pop(index)
+        self._embeddings = []
+        self._embed_model            = None
+        self.trained                 = False
+        self.history                 = {'loss': [0.0]}
+        self._viz_2d                 = []
+        self._last_generate_meta     = None
+
     def clear(self) -> None:
         self._texts.clear()
         self._embeddings.clear()

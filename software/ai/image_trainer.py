@@ -135,6 +135,14 @@ class ImageTrainer:
         # Pre-resize once at upload time — avoids repeated resize in every __getitem__ call
         self._pil_imgs.append(img.resize((IMAGE_SIZE, IMAGE_SIZE), Image.BILINEAR))
 
+    def remove_image(self, index: int) -> None:
+        if index < 0 or index >= len(self._pil_imgs):
+            raise IndexError('Image index out of range')
+        self._pil_imgs.pop(index)
+        self._model  = None
+        self.trained = False
+        self.history = {'loss': []}
+
     def clear(self) -> None:
         self._pil_imgs.clear()
         self._model  = None

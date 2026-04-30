@@ -195,11 +195,11 @@
     /* ─────────────────────────────────────────────────
        STEP 1 — TRAIN
     ───────────────────────────────────────────────── */
-    .train-layout { display: grid; grid-template-columns: 1fr 1.9fr 1.1fr; gap: 14px; align-items: start; }
+    .train-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2.35fr) minmax(0, 1fr); gap: 14px; align-items: start; }
     @media (max-width: 800px) { .train-layout { grid-template-columns: 1fr; } }
 
     /* Upload panel */
-    .upload-col { display: flex; flex-direction: column; gap: 10px; padding: 16px 12px 16px 16px; background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 18px; }
+    .upload-col { display: flex; flex-direction: column; gap: 10px; padding: 16px 12px 16px 16px; background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 18px; min-width: 0; }
     .drop-zone {
       border: 2px dashed var(--primary-mid); border-radius: 12px; padding: 22px 14px;
       text-align: center; cursor: pointer; color: var(--primary); font-size: .92rem;
@@ -208,12 +208,23 @@
     .drop-zone:hover { background: var(--primary-sel); }
     .dz-icon { font-size: 2rem; margin-bottom: 6px; }
     .thumb-grid { display: flex; flex-wrap: wrap; gap: 5px; max-height: 120px; overflow-y: auto; }
-    .thumb-sm { width: 44px; height: 44px; border-radius: 7px; object-fit: cover; border: 1.5px solid var(--border); }
+    .thumb-item { position: relative; width: 44px; height: 44px; }
+    .thumb-sm { width: 44px; height: 44px; border-radius: 7px; object-fit: cover; border: 1.5px solid var(--border); display:block; }
 
     .txt-area { width: 100%; min-height: 84px; resize: vertical; padding: 10px 12px; border: 2px solid var(--border); border-radius: 12px; font-size: 1rem; color: var(--text); outline: none; transition: border .2s; font-family: inherit; background: var(--card); }
     .txt-area:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-sel); }
 
-    .txt-item { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; font-size: .88rem; color: var(--muted); line-height: 1.4; }
+    .txt-item { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; font-size: .88rem; color: var(--muted); line-height: 1.4; display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+    .txt-item-content { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    #txtList { max-height: 200px; overflow-y: auto; }
+    .data-rm-btn {
+      width: 16px; height: 16px; border-radius: 50%;
+      border: none; background: transparent; color: #c3c8d2;
+      cursor: pointer; font-size: .8rem; line-height: 1;
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 0; flex-shrink: 0;
+    }
+    .data-rm-btn:hover { color: #a6acb8; background: #f1f3f8; }
     .count-badge { background: var(--primary-sel); color: var(--primary-dark); border-radius: 999px; padding: 6px 14px; font-size: .95rem; font-weight: 700; text-align: center; }
 
     /* Live preview panel */
@@ -262,7 +273,7 @@
     .epoch-badge { font-size: .9rem; font-weight: 800; color: var(--primary); white-space: nowrap; }
 
     /* Hyperparams panel */
-    .hyper-col { display: flex; flex-direction: column; gap: 12px; padding: 16px 12px 16px 16px; background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 18px; }
+    .hyper-col { display: flex; flex-direction: column; gap: 12px; padding: 16px 12px 16px 16px; background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 18px; min-width: 0; }
     .hyper-group { display: flex; flex-direction: column; gap: 5px; }
     .hyper-label { font-size: 1rem; font-weight: 800; color: var(--text); display: flex; align-items: center; justify-content: space-between; }
     .hyper-val  { color: var(--primary); font-weight: 800; }
@@ -373,8 +384,8 @@
     .tmc-title { font-size: 1rem; font-weight: 800; }
     .tmc-card.selected .tmc-title { color: var(--primary); }
     .tmc-desc { font-size: .88rem; color: var(--muted); line-height: 1.4; margin-bottom: 3px; }
-    .tmc-pros { font-size: .85rem; color: oklch(52% 0.12 155); line-height: 1.55; }
-    .tmc-cons { font-size: .85rem; color: oklch(55% 0.16 20); }
+    .tmc-note { font-size: .82rem; color: var(--text); line-height: 1.5; margin-top: 4px; }
+    .tmc-best { font-size: .82rem; color: var(--primary-dark); line-height: 1.5; margin-top: 6px; font-weight: 700; }
     /* Emoji picker */
     .emoji-btn { font-size: 1.2rem; background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 8px; width: 34px; height: 34px; cursor: pointer; transition: border-color .15s, background .15s; display: flex; align-items: center; justify-content: center; padding: 0; }
     .emoji-btn:hover { border-color: var(--primary-mid); background: var(--primary-lite); }
@@ -717,35 +728,42 @@
       <div class="step-sub" id="trainTitle" style="margin-bottom:8px;">Train your model</div>
 
       <!-- Text mode training mode picker (hidden in image mode) -->
+      <div id="step1Guide" class="hidden" style="margin-bottom:8px;font-size:.86rem;color:var(--muted);line-height:1.45;">
+        <strong>Step 1: Select the mode of training.</strong> This choice controls how your AI learns, how fast it trains, and how much training behavior you can observe.
+      </div>
       <div id="txtModePicker" class="hidden" style="flex-shrink:0;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
-        <div class="tmc-card selected" id="tmcard-scratch" onclick="selectTrainingMode('scratch')">
+        <div class="tmc-card" id="tmcard-scratch" onclick="selectTrainingMode('scratch')">
           <div class="tmc-check">✓</div>
           <div class="tmc-head"><span class="tmc-icon">🌱</span><span class="tmc-title">From Scratch</span></div>
-          <div class="tmc-desc">Build a brain from nothing.</div>
-          <div class="tmc-pros">✓ See real training happen<br>✓ Watch the loss go down</div>
-          <div class="tmc-cons">✗ Slower<br>✗ Needs lots of examples</div>
+          <div class="tmc-desc">🧩 Build a brain from zero.</div>
+          <div class="tmc-note"><strong>How it works:</strong> Start with an empty neural network. It knows nothing about language until it sees your data.</div>
+          <div class="tmc-note"><strong>Result:</strong> Likely gibberish. Without millions of examples, the AI can't learn the complex rules of human language.</div>
+          <div class="tmc-best"><strong>Best for:</strong> Seeing the "math" behind Machine Learning and watching how a brain starts to find patterns.</div>
         </div>
         <div class="tmc-card" id="tmcard-finetune" onclick="selectTrainingMode('finetune')">
           <div class="tmc-check">✓</div>
           <div class="tmc-head"><span class="tmc-icon">🎓</span><span class="tmc-title">Fine-tune</span></div>
-          <div class="tmc-desc">Adjust an already-trained brain.</div>
-          <div class="tmc-pros">✓ Polished results<br>✓ Works with fewer examples</div>
-          <div class="tmc-cons">✗ Takes a few minutes<br>✗ Bigger file size</div>
+          <div class="tmc-desc">🛠️ Upgrade an existing brain.</div>
+          <div class="tmc-note"><strong>How it works:</strong> Take a pre-trained model that already knows English and adjust its "settings" to match your style.</div>
+          <div class="tmc-note"><strong>Result:</strong> Solid sentences. It keeps its grammar but learns to use your specific vocabulary and tone.</div>
+          <div class="tmc-best"><strong>Best for:</strong> Making a custom bot that permanently learns your data.</div>
         </div>
         <div class="tmc-card" id="tmcard-smart" onclick="selectTrainingMode('smart_prompt')">
           <div class="tmc-check">✓</div>
           <div class="tmc-head"><span class="tmc-icon">🎯</span><span class="tmc-title">Smart Prompt</span></div>
-          <div class="tmc-desc">Show examples to a smart AI.</div>
-          <div class="tmc-pros">✓ Instant results<br>✓ Works with very few examples</div>
-          <div class="tmc-cons">✗ Less hands-on with training<br>✗ Needs LLaVA running locally</div>
+          <div class="tmc-desc">📋 Give the brain a "cheat sheet."</div>
+          <div class="tmc-note"><strong>How it works:</strong> No training. The AI stays the same, but it looks at your examples as context right before it answers.</div>
+          <div class="tmc-note"><strong>Result:</strong> High quality. The AI is already very smart; it just follows the patterns it sees on its "cheat sheet."</div>
+          <div class="tmc-best"><strong>Best for:</strong> Getting fast, high-quality results from a small amount of data.</div>
         </div>
       </div>
 
       <div class="train-layout">
 
         <!-- LEFT — Upload -->
-        <div class="upload-col">
-          <div class="panel-title">Your Data</div>
+        <div class="upload-col" id="setupDataCol">
+          <div class="panel-title">Step 2: Your Data</div>
+          <div style="font-size:.82rem;color:var(--muted);line-height:1.45;margin-top:-4px;">Add examples your model should learn from.</div>
 
           <!-- Image upload -->
           <div id="imgUploadZone">
@@ -771,27 +789,9 @@
 
           <!-- Text upload -->
           <div id="txtUploadZone" class="hidden">
-            <textarea class="txt-area" id="txtIn" placeholder="Paste text here — stories, poems, lyrics, articles…"></textarea>
+            <textarea class="txt-area" id="txtIn" placeholder="Paste text here — one data entry per line."></textarea>
             <div style="display:flex;gap:6px;margin-top:6px;">
-              <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="addText()">+ Add this text</button>
-              <button class="btn btn-secondary btn-sm" onclick="openBulkPaste()">+ Bulk paste</button>
-            </div>
-            <div id="txtList" style="margin-top:8px;display:flex;flex-direction:column;gap:5px;"></div>
-          </div>
-
-          <!-- Bulk paste panel -->
-          <div id="bulkPastePanel" class="hidden" style="background:var(--card-bg);border:1.5px solid var(--border);border-radius:14px;padding:14px 16px;margin-top:6px;display:flex;flex-direction:column;gap:10px;">
-            <div style="font-size:.9rem;font-weight:700;">Paste your text below — we'll split it into separate examples.</div>
-            <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:.88rem;">
-              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="radio" name="bulkSplit" value="newline" checked onchange="bulkSplitChanged()"> New line</label>
-              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="radio" name="bulkSplit" value="period" onchange="bulkSplitChanged()"> Full stop (period)</label>
-              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="radio" name="bulkSplit" value="paragraph" onchange="bulkSplitChanged()"> Empty line (paragraph)</label>
-            </div>
-            <textarea id="bulkPasteIn" style="height:120px;resize:vertical;font-family:inherit;font-size:.88rem;padding:8px 10px;border:1.5px solid var(--border);border-radius:10px;background:var(--card);color:var(--text);outline:none;width:100%;box-sizing:border-box;" placeholder="Paste a long text here…" oninput="bulkSplitChanged()"></textarea>
-            <div id="bulkPreviewCount" style="font-size:.85rem;color:var(--muted);font-weight:700;">Preview: paste text above to see how many examples will be added.</div>
-            <div style="display:flex;gap:8px;">
-              <button class="btn btn-secondary btn-sm" onclick="closeBulkPaste()">Cancel</button>
-              <button class="btn btn-primary btn-sm" id="bulkAddBtn" onclick="bulkAddExamples()" disabled>✓ Add examples</button>
+              <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="addText()">+ Add Data</button>
             </div>
           </div>
 
@@ -830,13 +830,16 @@
 
           <div class="fact-box">
             <div class="fact-label">💡 Tip</div>
-            <div class="fact-text" id="factText">More data = better results. Try uploading at least 5–10 items!</div>
+            <div class="fact-text" id="factText">• More data = better results.<br>• Better quality examples create better outputs.</div>
           </div>
+          <div id="txtList" style="display:flex;flex-direction:column;gap:5px;"></div>
+          <button class="btn btn-primary btn-full hidden" id="toParamsBtn" onclick="continueToParams()" style="margin-top:8px;">Next: Set Parameters →</button>
         </div>
 
         <!-- CENTER — Live Preview -->
-        <div class="preview-col">
+        <div class="preview-col" id="setupPreviewCol">
           <div class="panel-title" style="text-align:center;" id="previewLabel">Live Preview</div>
+          <div style="font-size:.82rem;color:var(--muted);line-height:1.45;text-align:center;margin-top:-4px;">Watch how training changes your model in real time.</div>
 
           <!-- Image preview -->
           <div id="imgPreviewWrap">
@@ -969,8 +972,9 @@
         </div>
 
         <!-- RIGHT — Hyperparameters -->
-        <div class="hyper-col">
-          <div class="panel-title">Parameters</div>
+        <div class="hyper-col" id="setupParamsCol">
+          <div class="panel-title">Step 3: Parameters</div>
+          <div style="font-size:.82rem;color:var(--muted);line-height:1.45;margin-top:-4px;">Set how your model learns: speed, number of passes, and context size.</div>
 
           <!-- Epochs -->
           <div class="hyper-group" id="epochsGroup">
@@ -1596,11 +1600,12 @@ let _smartHighlights = [];
 
 const LR_MAP          = { fast: 0.01, steady: 0.001, careful: 0.0002 };
 const LR_MAP_FINETUNE = { fast: 1e-4, steady: 5e-5, careful: 1e-5 };
-let _textTrainingMode = 'scratch';
+let _textTrainingMode = null;
 let _clfTrainingMode  = 'finetune';  // classifier: 'finetune' | 'scratch'
 let _inputMode        = 'image';     // classifier input type
 let _stallTimer       = null;
 let _trainDevice      = 'cpu';
+let _setupStage       = 1;           // 1: method, 2: data, 3: parameters, 4: live simulation (after Train)
 
 // Classifier-specific
 let _clfLabels  = [];   // list of label strings
@@ -1608,6 +1613,8 @@ let _clfCounts  = {};   // { label: count }
 let _clfThumbs  = {};   // { label: [dataUrl, …] } — persists across re-renders
 let _clfColors  = ['#6366f1','#f59e0b','#10b981','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6'];
 let _clfActive  = null; // which label file-picker is targeting
+let _txtItems   = [];
+let _imgThumbs  = [];
 
 const _EMOJI_TYPE = {
   image_generator: '🎨', text_generator: '✍️',
@@ -1811,6 +1818,7 @@ function _render() {
 
   if (_step === 2) _fillTestInfo();
   if (_step === 3) _fillBotSummary();
+  _syncSetupFlow();
 }
 
 // ── Mode ───────────────────────────────────────────────────────────────────────
@@ -1837,15 +1845,61 @@ function selectClfTrainingMode(tm) {
   _clfTrainingMode = tm;
   document.getElementById('clf-tm-finetune').classList.toggle('selected', tm === 'finetune');
   document.getElementById('clf-tm-scratch').classList.toggle('selected', tm === 'scratch');
+  if (_step === 1 && _setupStage < 2) _setupStage = 2;
   fetch('/api/mode', { method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ mode: 'classifier', training_mode: tm, input_mode: _inputMode }) });
+  _syncSetupFlow();
 }
 
 function getStarted() {
   if (!_mode) return;
   _applyMode();
+  _setupStage = (_mode === 'text') ? 1 : 2;
   _step = 1;
   _render();
+}
+
+function _hasEnoughData() {
+  if (_mode === 'classifier') {
+    if (_clfLabels.length < 2) return false;
+    const total = _clfLabels.reduce((sum, lbl) => sum + (_clfCounts[lbl] || 0), 0);
+    return total > 0;
+  }
+  return _nData > 0;
+}
+
+function _syncSetupFlow() {
+  const onTrain = (_step === 1);
+  const dataReady = _hasEnoughData();
+  if (onTrain && _setupStage >= 3 && !dataReady) _setupStage = 2;
+  if (onTrain && _setupStage === 2 && dataReady) _setupStage = 3;
+
+  const dataCol = document.getElementById('setupDataCol');
+  const paramsCol = document.getElementById('setupParamsCol');
+  const previewCol = document.getElementById('setupPreviewCol');
+  dataCol?.classList.toggle('hidden', !onTrain || _setupStage < 2);
+  paramsCol?.classList.toggle('hidden', !onTrain || _setupStage < 3);
+  previewCol?.classList.toggle('hidden', !onTrain || _setupStage < 4);
+
+  const toParamsBtn = document.getElementById('toParamsBtn');
+  if (toParamsBtn) {
+    toParamsBtn.classList.toggle('hidden', !onTrain || _setupStage !== 2);
+    toParamsBtn.disabled = !dataReady;
+    toParamsBtn.textContent = dataReady ? 'Next: Set Parameters →' : 'Add data to continue →';
+  }
+
+  const trainBtn = document.getElementById('trainBtn');
+  if (trainBtn) {
+    trainBtn.disabled = onTrain && _setupStage < 3;
+    if (onTrain && _setupStage < 3) trainBtn.title = 'Finish setup steps first';
+    else trainBtn.removeAttribute('title');
+  }
+}
+
+function continueToParams() {
+  if (_setupStage < 2 || !_hasEnoughData()) return;
+  _setupStage = 3;
+  _syncSetupFlow();
 }
 
 function _applyMode() {
@@ -1857,6 +1911,8 @@ function _applyMode() {
   document.getElementById('imgUploadZone').classList.toggle('hidden', !img);
   document.getElementById('txtUploadZone').classList.toggle('hidden', !txt);
   document.getElementById('clfUploadZone').classList.toggle('hidden', !clf);
+  document.getElementById('txtList').classList.toggle('hidden', !txt);
+  document.getElementById('step1Guide')?.classList.toggle('hidden', !txt);
   // Count badge / clear button — hide for classifier (it has per-label counts)
   document.getElementById('countBadge').classList.toggle('hidden', clf);
 
@@ -1894,10 +1950,10 @@ function _applyMode() {
   // Labels & tips
   document.getElementById('trainTitle').textContent = img ? 'Train your Image Generator'
     : clf ? 'Train your Classifier' : 'Train your Text Generator';
-  document.getElementById('factText').textContent = img
-    ? 'More diverse photos = richer variety. Try uploading 10+ images!'
-    : clf ? 'Add at least 5 examples per label for the best results.'
-    : 'Longer text = better patterns. Paste several paragraphs or stories!';
+  document.getElementById('factText').innerHTML = img
+    ? '• More diverse photos = richer variety.<br>• Try uploading 10+ images.'
+    : clf ? '• Add at least 5 examples per label.<br>• Better labels and cleaner examples improve accuracy.'
+    : '• Each new line is one data entry.<br>• Garbage in, garbage out: better quality text creates better results.';
 
   // Test step
   document.getElementById('imgTestWrap').classList.toggle('hidden', !img);
@@ -1917,11 +1973,14 @@ function startOver() {
   _bBotId = null; _bBotName = 'My Bot'; _bBotEmoji = '🤖';
   _bInputs = []; _bBrain = null; _bOutputs = []; _bRules = [];
   _cardMode = null;
+  _setupStage = 1;
+  _txtItems = [];
+  _imgThumbs = [];
   ['image','text','clf-image','clf-text'].forEach(m =>
     document.getElementById('mode-' + m)?.classList.remove('selected'));
   document.getElementById('getStartedBtn').disabled = true;
-  document.getElementById('thumbGrid').innerHTML = '';
-  document.getElementById('txtList').innerHTML   = '';
+  _renderImgThumbs();
+  _renderTxtList();
   document.getElementById('clfLabelList').innerHTML = '<div style="font-size:.88rem;color:var(--muted);padding:6px 0;" id="clfLabelEmpty">Add at least 2 labels to get started.</div>';
   _resetPreview();
   fetch('/api/clear', { method: 'POST' });
@@ -1948,31 +2007,30 @@ async function _uploadImg(dataUrl) {
   if (!d.ok) return;
   _nData = d.count;
   _updateCountBadge();
-  const img = document.createElement('img');
-  img.className = 'thumb-sm';
-  img.src = 'data:image/png;base64,' + d.thumb;
-  document.getElementById('thumbGrid').appendChild(img);
+  _imgThumbs.push('data:image/png;base64,' + d.thumb);
+  _renderImgThumbs();
+  _syncSetupFlow();
 }
 
 // ── Upload — text ──────────────────────────────────────────────────────────────
 async function addText() {
   const ta   = document.getElementById('txtIn');
-  const text = ta.value.trim();
-  if (!text) return;
-  const res = await fetch('/api/upload', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text}) });
-  const d   = await res.json();
-  if (!d.ok) return;
-  _nData = d.count;
+  const lines = ta.value
+    .split('\n')
+    .map(t => t.trim())
+    .filter(Boolean);
+  if (!lines.length) return;
+  for (const text of lines) {
+    const res = await fetch('/api/upload', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text}) });
+    const d   = await res.json();
+    if (!d.ok) continue;
+    _nData = d.count;
+    _txtItems.push(text);
+  }
   _updateCountBadge();
-  const item = document.createElement('div');
-  item.className = 'txt-item';
-  item.textContent = text.length > 72 ? text.slice(0, 72) + '…' : text;
-  document.getElementById('txtList').appendChild(item);
+  _renderTxtList();
   ta.value = '';
-}
-
-function _getBulkSplitMode() {
-  return (document.querySelector('input[name="bulkSplit"]:checked') || {}).value || 'newline';
+  _syncSetupFlow();
 }
 
 function _splitBulkText(raw, mode) {
@@ -1983,54 +2041,58 @@ function _splitBulkText(raw, mode) {
   return parts.map(s => s.trim()).filter(s => s.length > 0);
 }
 
-function openBulkPaste() {
-  document.getElementById('bulkPastePanel').classList.remove('hidden');
-  document.getElementById('bulkPasteIn').focus();
-}
-
-function closeBulkPaste() {
-  document.getElementById('bulkPastePanel').classList.add('hidden');
-  document.getElementById('bulkPasteIn').value = '';
-  document.getElementById('bulkPreviewCount').textContent = 'Preview: paste text above to see how many examples will be added.';
-  document.getElementById('bulkAddBtn').disabled = true;
-}
-
-function bulkSplitChanged() {
-  const raw   = document.getElementById('bulkPasteIn').value;
-  const parts = _splitBulkText(raw, _getBulkSplitMode());
-  const n     = parts.length;
-  const el    = document.getElementById('bulkPreviewCount');
-  const btn   = document.getElementById('bulkAddBtn');
-  el.textContent = raw.trim() ? `Preview: ${n} example${n !== 1 ? 's' : ''} will be added.` : 'Preview: paste text above to see how many examples will be added.';
-  btn.disabled = n === 0;
-  if (n > 0) btn.textContent = `✓ Add ${n} example${n !== 1 ? 's' : ''}`;
-}
-
-async function bulkAddExamples() {
-  const raw   = document.getElementById('bulkPasteIn').value;
-  const parts = _splitBulkText(raw, _getBulkSplitMode());
-  if (!parts.length) return;
-  const btn = document.getElementById('bulkAddBtn');
-  btn.disabled = true;
-  btn.textContent = 'Adding…';
-  for (const text of parts) {
-    const res = await fetch('/api/upload', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text}) });
-    const d   = await res.json();
-    if (!d.ok) continue;
-    _nData = d.count;
-    const item = document.createElement('div');
-    item.className = 'txt-item';
-    item.textContent = text.length > 72 ? text.slice(0, 72) + '…' : text;
-    document.getElementById('txtList').appendChild(item);
-  }
-  _updateCountBadge();
-  closeBulkPaste();
-}
-
 function _updateCountBadge() {
   if (_mode === 'classifier') return; // per-label counts shown inline
   const unit = _mode === 'image' ? 'image' : 'text sample';
   document.getElementById('countBadge').textContent = `${_nData} ${unit}${_nData !== 1 ? 's' : ''} uploaded`;
+}
+
+function _renderTxtList() {
+  const list = document.getElementById('txtList');
+  if (!list) return;
+  list.innerHTML = _txtItems.map((text, idx) => {
+    const safe = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+    return `<div class="txt-item">
+      <span class="txt-item-content" title="${safe}">${safe}</span>
+      <button class="data-rm-btn" onclick="removeUploadedData(${idx})" title="Delete this item">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function _renderImgThumbs() {
+  const grid = document.getElementById('thumbGrid');
+  if (!grid) return;
+  grid.innerHTML = _imgThumbs.map((src, idx) => `<div class="thumb-item">
+      <img class="thumb-sm" src="${src}" alt="">
+      <button class="data-rm-btn" style="position:absolute;top:-4px;right:-4px;background:#ffffffcc;" onclick="removeUploadedData(${idx})" title="Delete this item">✕</button>
+    </div>`).join('');
+}
+
+async function removeUploadedData(idx) {
+  const res = await fetch('/api/remove', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ idx }),
+  });
+  const d = await res.json();
+  if (!d.ok) return;
+  if (_mode === 'image') {
+    _imgThumbs.splice(idx, 1);
+    _renderImgThumbs();
+  } else if (_mode === 'text') {
+    _txtItems.splice(idx, 1);
+    _renderTxtList();
+  }
+  _nData = d.count || 0;
+  _trained = !!d.trained;
+  _updateCountBadge();
+  _resetPreview();
+  _syncSetupFlow();
+  _render();
 }
 
 // ── Classifier — label management ──────────────────────────────────────────────
@@ -2175,6 +2237,7 @@ async function _clfUploadExample(label, dataUrl) {
   _clfThumbs[label].push(dataUrl);
   _clfRenderLabels();
   _nData = Object.values(_clfCounts).reduce((s, v) => s + v, 0);
+  _syncSetupFlow();
 }
 
 async function _clfRemoveExample(label, thumbIdx) {
@@ -2212,6 +2275,7 @@ async function clfAddTextExample(label) {
   _nData = Object.values(_clfCounts).reduce((s, v) => s + v, 0);
   const inp2 = document.getElementById('clf-txtin-' + CSS.escape(label));
   if (inp2) inp2.value = '';
+  _syncSetupFlow();
 }
 
 function clfOpenTextBulk(label) {
@@ -2260,19 +2324,23 @@ async function clfBulkAddExamples() {
   _clfRenderLabels();
   document.getElementById('clfTextBulkPanel').classList.add('hidden');
   document.getElementById('clfTextBulkIn').value = '';
+  _syncSetupFlow();
 }
 
 async function clearData() {
   if (!confirm('Clear all uploaded data?')) return;
   await fetch('/api/clear', { method: 'POST' });
   _nData = 0; _updateCountBadge();
-  document.getElementById('thumbGrid').innerHTML = '';
-  document.getElementById('txtList').innerHTML   = '';
+  _txtItems = [];
+  _imgThumbs = [];
+  _renderImgThumbs();
+  _renderTxtList();
   if (_mode === 'classifier') {
     _clfCounts = {}; _clfLabels = [];
     document.getElementById('clfLabelList').innerHTML = '<div style="font-size:.88rem;color:var(--muted);padding:6px 0;" id="clfLabelEmpty">Add at least 2 labels to get started.</div>';
   }
   _resetPreview();
+  _syncSetupFlow();
 }
 
 function _resetPreview() {
@@ -2307,6 +2375,9 @@ function setChip(btn, group, val) {
 // ── Training ───────────────────────────────────────────────────────────────────
 function startTraining() {
   if (!_mode) return;
+  if (_setupStage < 3) return;
+  _setupStage = 4;
+  _syncSetupFlow();
   if (_es) { _es.close(); _es = null; }
   _trained = false; _lossHist = []; _gotStartEvent = false; _smartVizData = []; _smartHighlights = [];
   _resetPreview();
@@ -3862,6 +3933,8 @@ function selectTrainingMode(mode) {
 
   fetch('/api/mode', { method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ mode: 'text', training_mode: mode }) });
+  if (_step === 1 && _setupStage < 2) _setupStage = 2;
+  _syncSetupFlow();
 }
 
 async function fetchSmartStatus() {

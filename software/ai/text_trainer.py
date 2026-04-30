@@ -62,6 +62,17 @@ class TextTrainer:
     def add_text(self, text: str) -> None:
         self._texts.append(text.strip())
 
+    def remove_text(self, index: int) -> None:
+        if index < 0 or index >= len(self._texts):
+            raise IndexError('Text index out of range')
+        self._texts.pop(index)
+        self._model    = None
+        self._tokenizer = None
+        self._tok2loc  = {}
+        self._loc2tok  = {}
+        self.trained   = False
+        self.history   = {'loss': []}
+
     def clear(self) -> None:
         self._texts.clear()
         self._model    = None

@@ -173,6 +173,25 @@ def clear():
     return jsonify({'ok': True})
 
 
+@app.post('/api/remove')
+def remove_data_item():
+    data  = request.get_json(force=True) or {}
+    state = _state()
+    if state['trainer'] is None:
+        return jsonify({'ok': False, 'error': 'No mode set.'})
+    try:
+        idx = int(data.get('idx', -1))
+        if state['mode'] == 'image':
+            state['trainer'].remove_image(idx)
+        elif state['mode'] == 'text':
+            state['trainer'].remove_text(idx)
+        else:
+            return jsonify({'ok': False, 'error': 'Single-item delete is not used for classifier mode.'})
+        return jsonify({'ok': True, 'count': state['trainer'].count(), 'trained': state['trainer'].trained})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)})
+
+
 @app.get('/api/info')
 def info():
     state = _state()
