@@ -103,7 +103,17 @@ class FinetuneTrainer:
                 top_p=0.9,
                 pad_token_id=self._tokenizer.eos_token_id,
             )
-        return self._tokenizer.decode(output[0], skip_special_tokens=True).strip()
+        new_tokens = output[0][input_ids.shape[1]:]
+        result = self._tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
+        # GPT-2 (a continuation model) often re-generates the prompt word as its
+        # first new token before producing the actual content.  Strip it so the
+        # response doesn't echo back whatever the user typed.
+        if prompt:
+            prompt_stripped = prompt.strip()
+            if result.lower().startswith(prompt_stripped.lower()):
+                result = result[len(prompt_stripped):].lstrip()
+        print(f'[FINETUNE _sample] prompt={prompt!r} input_len={input_ids.shape[1]} output_len={output[0].shape[0]} returning={result!r}', flush=True)
+        return result
 
     # ── Training ──────────────────────────────────────────────────────────────
 
@@ -207,13 +217,20 @@ class FinetuneTrainer:
     # ── Inference ─────────────────────────────────────────────────────────────
 
     def generate(self, prompt: str = '', length: int = 200, temperature: float = 1.0) -> str:
+        print(f'[FINETUNE generate] called with prompt={prompt!r}', flush=True)
         if not self.trained or self._model is None:
             raise RuntimeError('Model not trained yet.')
-        return self._sample(
-            prompt=prompt,
+        # The model was fine-tuned on complete standalone sentences, so it
+        # generates best from a clean start (EOS seed) — the same way training
+        # samples are produced.  Using a chat greeting like "hi" as a text seed
+        # causes GPT-2 to continue the greeting instead of generating an unfortune.
+        result = self._sample(
+            prompt='',
             max_new_tokens=max(15, min(length // 4, 80)),
             temperature=temperature,
         )
+        print(f'[FINETUNE generate] returning={result!r}', flush=True)
+        return result
 
     # ── Persistence ───────────────────────────────────────────────────────────
 

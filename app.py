@@ -278,7 +278,9 @@ def generate():
             prompt      = data.get('prompt', '')
             length      = int(data.get('length', 200))
             temperature = float(data.get('temperature', 1.0))
+            print(f'[/api/generate] trainer type={type(state["trainer"]).__name__}', flush=True)
             text        = state['trainer'].generate(prompt=prompt, length=length, temperature=temperature)
+            print(f'[/api/generate] text={text!r}', flush=True)
             result      = {'ok': True, 'text': text}
             # Smart Prompt trainers attach retrieval context to each generation
             extra = getattr(state['trainer'], '_last_generate_meta', None)
@@ -817,12 +819,14 @@ class _FinetuneGPT2Runner:
             ids = self._tok.encode(prompt, return_tensors='pt')
         else:
             ids = torch.tensor([[self._tok.eos_token_id]])
+        prompt_len = ids.shape[1]
         with torch.no_grad():
             out = self._mdl.generate(
                 ids, max_new_tokens=length, do_sample=True,
                 temperature=max(temperature, 1e-6), top_p=0.9,
                 pad_token_id=self._tok.eos_token_id)
-        return self._tok.decode(out[0], skip_special_tokens=True).strip()
+        new_tokens = out[0][prompt_len:]
+        return self._tok.decode(new_tokens, skip_special_tokens=True).strip()
 
 
 class _VAERunner:
