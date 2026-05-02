@@ -2,7 +2,7 @@
 ClassifierTrainer — supervised image / text / audio classifier.
 
 input_mode:    'image' | 'text' | 'audio'
-training_mode: 'finetune' | 'scratch'
+training_mode: None | 'finetune' | 'scratch' (None until user chooses in the UI)
 
 finetune → frozen pretrained backbone + trained linear head
   image/audio: MobileNetV3-small (torchvision)
@@ -19,6 +19,8 @@ Yield protocol matches the other trainers:
   {'phase':'error', 'message':str}
 """
 from __future__ import annotations
+
+from typing import Optional
 
 import base64
 import io
@@ -205,9 +207,9 @@ def _audio_bytes_to_tensor(audio_bytes: bytes,
 class ClassifierTrainer:
     WEIGHTS_SUBPATH = 'classifier.pt'
 
-    def __init__(self, input_mode: str = 'image', training_mode: str = 'finetune'):
+    def __init__(self, input_mode: str = 'image', training_mode: Optional[str] = None):
         self.input_mode    = input_mode     # 'image' | 'text' | 'audio'
-        self.training_mode = training_mode  # 'finetune' | 'scratch'
+        self.training_mode = training_mode  # None | 'finetune' | 'scratch'
         self.device        = _best_device()
 
         self.labels: list[str]        = []
@@ -282,6 +284,10 @@ class ClassifierTrainer:
         if missing:
             yield {'phase': 'error',
                    'message': f'No examples for: {", ".join(missing)}'}
+            return
+        if self.training_mode not in ('scratch', 'finetune'):
+            yield {'phase': 'error',
+                   'message': 'Choose Machine Learning or AI before training.'}
             return
         if self.input_mode == 'image':
             yield from self._train_image(epochs, lr, batch_size)
@@ -707,7 +713,8 @@ class ClassifierTrainer:
         self.trained = True
 
     def _arch_tag(self) -> str:
-        return f'{self.input_mode}-{self.training_mode}'
+        tm = self.training_mode or 'unset'
+        return f'{self.input_mode}-{tm}'
 
     # ── Info ──────────────────────────────────────────────────────────────────
 

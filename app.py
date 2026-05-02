@@ -97,7 +97,7 @@ def index():
     return render_template('trainer.html')
 
 
-def _make_trainer(mode: str, training_mode: str, input_mode: str = 'image'):
+def _make_trainer(mode: str, training_mode, input_mode: str = 'image'):
     if mode == 'image':
         return ImageTrainer()
     if mode == 'classifier':
@@ -111,14 +111,18 @@ def _make_trainer(mode: str, training_mode: str, input_mode: str = 'image'):
 
 @app.post('/api/mode')
 def set_mode():
-    data          = request.get_json(force=True) or {}
-    mode          = data.get('mode', 'image')
-    training_mode = data.get('training_mode', 'scratch')
-    input_mode    = data.get('input_mode', 'image')
+    data       = request.get_json(force=True) or {}
+    mode       = data.get('mode', 'image')
+    input_mode = data.get('input_mode', 'image')
     if mode not in ('image', 'text', 'classifier'):
         return jsonify({'ok': False, 'error': 'Invalid mode.'})
-    if training_mode not in ('scratch', 'finetune', 'smart_prompt'):
-        training_mode = 'scratch'
+    if mode == 'classifier':
+        raw = data.get('training_mode', object())
+        training_mode = raw if raw in ('scratch', 'finetune') else None
+    else:
+        training_mode = data.get('training_mode', 'scratch')
+        if training_mode not in ('scratch', 'finetune', 'smart_prompt'):
+            training_mode = 'scratch'
     if input_mode not in ('image', 'text', 'audio'):
         input_mode = 'image'
     state = _state()
@@ -135,6 +139,10 @@ def set_mode():
                 and old_input_mode == input_mode):
             new_trainer.labels    = old_trainer.labels[:]
             new_trainer._examples = {k: list(v) for k, v in old_trainer._examples.items()}
+        # When switching methods within text mode (ML / AI), preserve uploaded texts
+        if (mode == 'text' and old_trainer is not None
+                and hasattr(old_trainer, '_texts') and hasattr(new_trainer, '_texts')):
+            new_trainer._texts = list(getattr(old_trainer, '_texts', []))
         state['trainer'] = new_trainer
     return jsonify({'ok': True, 'mode': mode, 'training_mode': training_mode,
                     'input_mode': input_mode})

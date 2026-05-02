@@ -286,6 +286,7 @@
     .hyper-label { font-size: 1rem; font-weight: 800; color: var(--text); display: flex; align-items: center; justify-content: space-between; }
     .hyper-val  { color: var(--primary); font-weight: 800; }
     .hyper-hint { font-size: .88rem; color: var(--muted); line-height: 1.4; }
+    .param-next-btn { margin-top: 2px; align-self: flex-end; }
 
     .h-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 3px; background: var(--border); outline: none; cursor: pointer; display: block; }
     .h-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--primary); border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.18); cursor: pointer; }
@@ -417,10 +418,37 @@
     .smart-info-text  { font-size: .92rem; color: oklch(38% 0.08 155); line-height: 1.55; }
     .smart-stage-row  { display: flex; align-items: flex-start; gap: 7px; font-size: .92rem; color: oklch(36% 0.1 155); line-height: 1.5; }
     .smart-unavail { background: #fef3c7; border: 1px solid #fde68a; border-radius: 10px; padding: 9px 12px; font-size: .9rem; color: #92400e; line-height: 1.55; }
-    /* Embedding viz */
-    #embeddingSvg { display: block; width: 100%; border-radius: 10px; background: #0d0a1a; flex: 1; min-height: 500px; }
-    /* Smart Prompt test — response scatter plot */
-    #responseEmbedSvg { display: block; width: 100%; border-radius: 10px; background: #0d0a1a; min-height: 260px; }
+    /* Smart Prompt embedding / response scatter — compact so it fits on screen */
+    .smart-scatter-frame { display: flex; justify-content: center; flex-shrink: 0; width: 100%; }
+    .smart-scatter-svg {
+      display: block;
+      width: 100%;
+      max-width: min(300px, 100%);
+      height: auto;
+      max-height: min(200px, 36vh);
+      aspect-ratio: 100 / 60;
+      border-radius: 10px;
+      background: #0d0a1a;
+    }
+    .smart-scatter-svg circle.scatter-pt,
+    .smart-scatter-svg circle.scatter-response { cursor: help; }
+    #smartResponsePlot .smart-scatter-frame { margin-top: 4px; }
+    .scatter-tooltip {
+      position: fixed;
+      z-index: 120;
+      max-width: min(320px, calc(100vw - 24px));
+      padding: 8px 10px;
+      font-size: 0.82rem;
+      line-height: 1.45;
+      color: #f1f5f9;
+      background: rgba(13, 10, 26, 0.96);
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      border-radius: 10px;
+      pointer-events: none;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
     .smart-trained-badge { display: inline-block; background: #dcfce7; color: #166534; border-radius: 999px; padding: 3px 12px; font-size: .82rem; font-weight: 700; margin-bottom: 8px; }
     .tmc-card.unavailable { opacity: .5; cursor: not-allowed; pointer-events: none; }
 
@@ -780,6 +808,40 @@
         </div>
       </div>
 
+      <!-- Classifier: Step 1 · ML vs AI (same labels as text generator; maps to scratch / finetune) -->
+      <div id="clfStep1Block" class="hidden">
+        <div class="panel-title" style="margin-bottom:3px;">Step 1 · Choose Method</div>
+        <div style="font-size:.82rem;color:var(--muted);line-height:1.45;margin-bottom:10px;">Pick how your AI learns.</div>
+        <div id="clfModePicker" style="flex-shrink:0;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+          <div class="tmc-card" id="clf-tm-ml" onclick="selectClfTrainingMode('scratch')">
+            <div class="tmc-check">✓</div>
+            <div class="tmc-head"><span class="tmc-icon">🧠</span><span class="tmc-title">Machine Learning</span></div>
+            <div class="tmc-desc">Train a brain from zero using your data.</div>
+            <div class="tmc-best"><strong>Best for:</strong> Watching how a machine actually learns — step by step.</div>
+            <details class="tmc-more" onclick="event.stopPropagation()">
+              <summary>ⓘ Learn more</summary>
+              <div class="tmc-more-body">
+                <div><strong>How it works:</strong> A small classifier network starts untrained. It improves by comparing its guesses to your labels and updating weights — the same idea as big models, on your data.</div>
+                <div><strong>What you&apos;ll see:</strong> Loss and accuracy changing over epochs so you can watch real training, not just a black box.</div>
+              </div>
+            </details>
+          </div>
+          <div class="tmc-card" id="clf-tm-ai" onclick="selectClfTrainingMode('finetune')">
+            <div class="tmc-check">✓</div>
+            <div class="tmc-head"><span class="tmc-icon">✨</span><span class="tmc-title">AI</span></div>
+            <div class="tmc-desc">Use a powerful AI model guided by your examples.</div>
+            <div class="tmc-best"><strong>Best for:</strong> High-quality results instantly, no training wait.</div>
+            <details class="tmc-more" onclick="event.stopPropagation()">
+              <summary>ⓘ Learn more</summary>
+              <div class="tmc-more-body">
+                <div><strong>How it works:</strong> A pretrained vision or language backbone (already trained on huge datasets) is adapted to your categories with a light training stage — far less starting from scratch.</div>
+                <div><strong>What you get:</strong> Strong accuracy with fewer examples and faster, more stable training than training a full network from zero.</div>
+              </div>
+            </details>
+          </div>
+        </div>
+      </div>
+
       <div class="train-layout">
 
         <!-- ROW 2: Step 2 · Your Data + Step 3 · Parameters -->
@@ -868,32 +930,32 @@
 
           <!-- Epochs -->
           <div class="hyper-group" id="epochsGroup">
-            <div class="hyper-label">Epochs <span class="hyper-val" id="epochsVal">60</span></div>
+            <div class="hyper-label">Epochs (Practice Rounds) <span class="hyper-val" id="epochsVal">60</span></div>
             <input type="range" class="h-slider" id="epochsSlider" min="10" max="200" value="60"
               oninput="document.getElementById('epochsVal').textContent=this.value;updateEpochViz(+this.value)">
             <div class="param-viz" id="epochViz"></div>
-            <div class="hyper-hint">Each pass through your data — more = smarter, slower</div>
+            <div class="hyper-hint">The number of times the AI reviews your entire stack of images. More rounds = better memory, but it takes more time.</div>
           </div>
 
           <!-- Learning speed -->
           <div class="hyper-group" id="lrGroup">
-            <div class="hyper-label">Learning Speed</div>
+            <div class="hyper-label">Learning Rate (Correction Steps)</div>
             <div class="chip-row">
               <button class="chip"        onclick="setChip(this,'lr','fast');updateSpeedViz('fast')">Fast</button>
               <button class="chip active" onclick="setChip(this,'lr','steady');updateSpeedViz('steady')">Steady</button>
               <button class="chip"        onclick="setChip(this,'lr','careful');updateSpeedViz('careful')">Careful</button>
             </div>
             <div class="param-viz" id="speedViz"></div>
-            <div class="hyper-hint">How big a step the model takes each time it learns</div>
+            <div class="hyper-hint">How big of a change the AI makes when fixing its mistakes. Giant leaps are fast but might skip over the exact right answer; baby steps are careful but take longer.</div>
           </div>
 
           <!-- Image: Latent dim -->
           <div class="hyper-group" id="latentGroup">
-            <div class="hyper-label">Latent Dim <span class="hyper-val" id="latentVal">128</span></div>
+            <div class="hyper-label">Latent Dimension (Imagination Details) <span class="hyper-val" id="latentVal">128</span></div>
             <input type="range" class="h-slider" id="latentSlider" min="32" max="256" step="32" value="128"
               oninput="document.getElementById('latentVal').textContent=this.value;updateLatentViz(+this.value)">
             <div class="param-viz" id="latentViz"></div>
-            <div class="hyper-hint">The model's imagination space — more circles = richer dreams</div>
+            <div class="hyper-hint">How many specific features the AI tracks to remember your images. A higher number gives the AI a richer imagination, but requires more brainpower.</div>
           </div>
 
           <!-- Text Scratch: Window size -->
@@ -917,16 +979,16 @@
 
           <!-- Image: Augmentation -->
           <div class="hyper-group" id="augGroup">
-            <div class="hyper-label">Augmentation <span class="hyper-val" id="augVal">50</span>×</div>
+            <div class="hyper-label">Data Augmentation (Image Remixes) <span class="hyper-val" id="augVal">50×</span></div>
             <input type="range" class="h-slider" id="augSlider" min="10" max="100" step="10" value="50"
-              oninput="document.getElementById('augVal').textContent=this.value;updateAugViz(+this.value)">
+              oninput="document.getElementById('augVal').textContent=this.value + '×';updateAugViz(+this.value)">
             <div class="param-viz" id="augViz"></div>
-            <div class="hyper-hint">Each photo gets flipped, rotated &amp; recolored to make more training data</div>
+            <div class="hyper-hint">Automatically flipping, rotating, and recoloring your photos to give the AI a massive variety of examples to learn from.</div>
           </div>
 
           <!-- Batch size (image only) -->
           <div class="hyper-group" id="batchGroup">
-            <div class="hyper-label">Batch Size</div>
+            <div class="hyper-label">Batch Size (Group Size)</div>
             <div class="chip-row">
               <button class="chip"        onclick="setChip(this,'batch','4');updateBatchViz(4)">4</button>
               <button class="chip active" onclick="setChip(this,'batch','8');updateBatchViz(8)">8</button>
@@ -934,7 +996,7 @@
               <button class="chip"        onclick="setChip(this,'batch','32');updateBatchViz(32)">32</button>
             </div>
             <div class="param-viz" id="batchViz"></div>
-            <div class="hyper-hint">How many images the model looks at in one go</div>
+            <div class="hyper-hint">How many images the AI studies at the exact same time before it pauses to update what it just learned.</div>
           </div>
 
           <!-- Smart Prompt info (shown only when smart_prompt selected) -->
@@ -944,25 +1006,6 @@
               <div class="smart-info-text">Add examples below, then click Prepare My Bot.</div>
             </div>
             <div id="smartUnavailMsg" class="smart-unavail hidden" style="margin-top:8px;"></div>
-          </div>
-
-          <!-- Classifier training mode picker -->
-          <div id="clfModeGroup" class="hyper-group hidden">
-            <div class="hyper-label">Training Method</div>
-            <div style="display:flex;flex-direction:column;gap:6px;">
-              <div class="tmc-card selected" id="clf-tm-finetune" onclick="selectClfTrainingMode('finetune')">
-                <div class="tmc-check">✓</div>
-                <div class="tmc-head"><span class="tmc-icon">🎓</span><span class="tmc-title">Fine-tune</span></div>
-                <div class="tmc-desc">Frozen pretrained backbone + your head</div>
-                <div class="tmc-pros">✓ Fewer examples needed<br>✓ Better accuracy</div>
-              </div>
-              <div class="tmc-card" id="clf-tm-scratch" onclick="selectClfTrainingMode('scratch')">
-                <div class="tmc-check">✓</div>
-                <div class="tmc-head"><span class="tmc-icon">🌱</span><span class="tmc-title">From Scratch</span></div>
-                <div class="tmc-desc">Small network trained from zero</div>
-                <div class="tmc-pros">✓ See real training happen<br>✓ Understand the full process</div>
-              </div>
-            </div>
           </div>
 
           <!-- Train / Stop -->
@@ -1017,7 +1060,9 @@
               <div class="panel-title" style="font-size:.75rem;margin-bottom:2px;">🗺️ Shared pattern from your data</div>
               <div id="smartVizStatus" style="font-size:.77rem;color:var(--primary);font-weight:700;line-height:1.4;"></div>
             </div>
-            <svg id="embeddingSvg" viewBox="0 0 100 60" preserveAspectRatio="xMidYMid meet"></svg>
+            <div class="smart-scatter-frame">
+              <svg id="embeddingSvg" class="smart-scatter-svg" viewBox="0 0 100 60" preserveAspectRatio="xMidYMid meet"></svg>
+            </div>
             <div style="font-size:.72rem;color:var(--muted);line-height:1.4;text-align:center;">
               Examples that "mean" similar things sit close together. The bot searches this map when you ask something new.
             </div>
@@ -1190,7 +1235,9 @@
             </div>
             <!-- Smart Prompt: response position in embedding space -->
             <div id="smartResponsePlot" class="hidden" style="margin-top:12px;">
-              <svg id="responseEmbedSvg" viewBox="0 0 100 60" preserveAspectRatio="xMidYMid meet"></svg>
+              <div class="smart-scatter-frame">
+                <svg id="responseEmbedSvg" class="smart-scatter-svg" viewBox="0 0 100 60" preserveAspectRatio="xMidYMid meet"></svg>
+              </div>
               <div style="font-size:.78rem;color:var(--muted);margin-top:6px;text-align:center;">
                 The coral dot shows where your bot's answer sits in the pattern map. Closer dots = more similar in meaning.
               </div>
@@ -1620,6 +1667,8 @@
 </div><!-- card -->
 </div><!-- wizard -->
 
+<div id="scatterTooltip" class="scatter-tooltip hidden" role="tooltip"></div>
+
 <script>
 // ── State ──────────────────────────────────────────────────────────────────────
 let _mode    = null;   // 'image' | 'text' | 'classifier'
@@ -1640,11 +1689,13 @@ let _smartHighlights = [];
 const LR_MAP          = { fast: 0.01, steady: 0.001, careful: 0.0002 };
 const LR_MAP_FINETUNE = { fast: 1e-4, steady: 5e-5, careful: 1e-5 };
 let _textTrainingMode = null;
-let _clfTrainingMode  = 'finetune';  // classifier: 'finetune' | 'scratch'
+let _clfTrainingMode  = null;  // null until user picks; then 'scratch' (ML) | 'finetune' (AI)
 let _inputMode        = 'image';     // classifier input type
 let _stallTimer       = null;
 let _trainDevice      = 'cpu';
-let _setupStage       = 1;           // 1: method, 2: data, 3: parameters, 4: live simulation (after Train)
+let _setupStage       = 1;           // 1: method (text/clf), 2: data, 3: parameters, 4: live simulation (after Train); image starts at 2
+let _paramRevealCount = 1;
+let _paramRevealKey   = '';
 
 // Classifier-specific
 let _clfLabels  = [];   // list of label strings
@@ -1864,11 +1915,21 @@ function _render() {
 // ── Mode ───────────────────────────────────────────────────────────────────────
 function selectCard(card) {
   // card is one of: 'image' | 'text' | 'clf-image' | 'clf-text'
+  const prevCard = _cardMode;
+  if (prevCard && prevCard !== card) _resetModeDraftState(card);
   _cardMode = card;
-  if (card === 'image')     { _mode = 'image';      _inputMode = 'image'; }
+  if (card === 'image') {
+    _mode = 'image'; _inputMode = 'image';
+  }
   else if (card === 'text') { _mode = 'text';        _inputMode = 'text'; }
-  else if (card === 'clf-image') { _mode = 'classifier'; _inputMode = 'image'; }
-  else if (card === 'clf-text')  { _mode = 'classifier'; _inputMode = 'text'; }
+  else if (card === 'clf-image') {
+    _mode = 'classifier'; _inputMode = 'image';
+    if (prevCard !== 'clf-image') _clfTrainingMode = null;
+  }
+  else if (card === 'clf-text') {
+    _mode = 'classifier'; _inputMode = 'text';
+    if (prevCard !== 'clf-text') _clfTrainingMode = null;
+  }
   ['image','text','clf-image','clf-text'].forEach(m =>
     document.getElementById('mode-' + m)?.classList.toggle('selected', m === card));
   document.getElementById('getStartedBtn').disabled = false;
@@ -1883,8 +1944,8 @@ function selectMode(mode) { selectCard(mode); } // legacy alias
 
 function selectClfTrainingMode(tm) {
   _clfTrainingMode = tm;
-  document.getElementById('clf-tm-finetune').classList.toggle('selected', tm === 'finetune');
-  document.getElementById('clf-tm-scratch').classList.toggle('selected', tm === 'scratch');
+  document.getElementById('clf-tm-ml')?.classList.toggle('selected', tm === 'scratch');
+  document.getElementById('clf-tm-ai')?.classList.toggle('selected', tm === 'finetune');
   if (_step === 1 && _setupStage < 2) _setupStage = 2;
   fetch('/api/mode', { method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ mode: 'classifier', training_mode: tm, input_mode: _inputMode }) });
@@ -1894,7 +1955,8 @@ function selectClfTrainingMode(tm) {
 function getStarted() {
   if (!_mode) return;
   _applyMode();
-  _setupStage = (_mode === 'text') ? 1 : 2;
+  if (_mode === 'image') _setupStage = 2;
+  else _setupStage = (_mode === 'text' || _mode === 'classifier') ? 1 : 2;
   _step = 1;
   _render();
 }
@@ -1921,9 +1983,7 @@ function _syncSetupFlow() {
   const row3       = document.querySelector('.row3-grid');
 
   dataCol?.classList.toggle('hidden', !onTrain || _setupStage < 2);
-  // Smart Prompt: data col expands full-width, params col hidden
-  dataCol?.classList.toggle('smart-full', isSmart);
-  paramsCol?.classList.toggle('hidden', !onTrain || _setupStage < 3 || isSmart);
+  paramsCol?.classList.toggle('hidden', !onTrain || _setupStage < 3);
   // Row 3 (preview + stats sidebar) appears only once training has started
   if (row3) row3.classList.toggle('hidden', !onTrain || _setupStage < 4);
   previewCol?.classList.toggle('hidden', !onTrain || _setupStage < 4);
@@ -1943,10 +2003,17 @@ function _syncSetupFlow() {
     smartPrepBtn.textContent = dataReady ? '🎯 Prepare My Bot' : 'Add data to continue →';
   }
 
+  const showClfStep1 = onTrain && _mode === 'classifier';
+  document.getElementById('clfStep1Block')?.classList.toggle('hidden', !showClfStep1);
+
+  _syncParamProgress(onTrain);
   const trainBtn = document.getElementById('trainBtn');
   if (trainBtn) {
-    trainBtn.disabled = onTrain && _setupStage < 3;
-    if (onTrain && _setupStage < 3) trainBtn.title = 'Finish setup steps first';
+    const blocked = onTrain && (_setupStage < 3 || !_allParamsRevealed());
+    trainBtn.disabled = blocked;
+    if (!onTrain) trainBtn.removeAttribute('title');
+    else if (_setupStage < 3) trainBtn.title = 'Finish setup steps first';
+    else if (!_allParamsRevealed()) trainBtn.title = 'Finish each parameter (or click Next) first';
     else trainBtn.removeAttribute('title');
   }
 }
@@ -1955,6 +2022,91 @@ function continueToParams() {
   if (_setupStage < 2 || !_hasEnoughData()) return;
   _setupStage = 3;
   _syncSetupFlow();
+}
+
+function _paramFlowKey() {
+  if (_mode === 'image') return 'image';
+  if (_mode === 'classifier') return `classifier:${_inputMode}:${_clfTrainingMode || 'none'}`;
+  if (_mode === 'text') return `text:${_textTrainingMode || 'none'}`;
+  return 'none';
+}
+
+function _paramOrder() {
+  if (_mode === 'image') return ['epochsGroup', 'lrGroup', 'latentGroup', 'augGroup', 'batchGroup'];
+  if (_mode === 'classifier') return ['epochsGroup', 'batchGroup'];
+  if (_mode === 'text') {
+    if (_textTrainingMode === 'smart_prompt') return [];
+    return ['epochsGroup', 'lrGroup', 'scratchParams'];
+  }
+  return [];
+}
+
+function _syncParamProgress(onTrain) {
+  const key = _paramFlowKey();
+  if (_paramRevealKey !== key) {
+    _paramRevealKey = key;
+    _paramRevealCount = 1;
+  }
+  _applyParamProgress(onTrain);
+}
+
+function _allParamsRevealed() {
+  const order = _paramOrder();
+  return order.length === 0 || _paramRevealCount >= order.length;
+}
+
+function _applyParamProgress(onTrain) {
+  const order = _paramOrder();
+  const active = onTrain && _setupStage >= 3;
+  order.forEach((id, idx) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const show = active && idx < _paramRevealCount;
+    el.classList.toggle('hidden', !show);
+    const nextBtn = el.querySelector('.param-next-btn');
+    if (nextBtn) nextBtn.classList.toggle('hidden', !show || idx >= order.length - 1);
+  });
+}
+
+function _touchParam(groupId) {
+  const order = _paramOrder();
+  const idx = order.indexOf(groupId);
+  if (idx === -1) return;
+  if (idx < _paramRevealCount) {
+    _paramRevealCount = Math.max(_paramRevealCount, idx + 2);
+    _applyParamProgress(_step === 1);
+    // Re-evaluate Train button state immediately after progression changes.
+    _syncSetupFlow();
+  }
+}
+
+function _nextParamFrom(groupId) {
+  _touchParam(groupId);
+}
+
+function _resetModeDraftState(nextCard = null) {
+  _trained = false;
+  _lossHist = [];
+  _accHist = [];
+  _finalLoss = null;
+  _finalAccuracy = null;
+  _nData = 0;
+  _trainedEpochs = 0;
+  _imgThumbs = [];
+  _txtItems = [];
+  _clfLabels = [];
+  _clfCounts = {};
+  _clfThumbs = {};
+  _clfActive = null;
+  _clfTrainingMode = null;
+  _setupStage = nextCard === 'image' ? 2 : 1;
+  _paramRevealCount = 1;
+  _paramRevealKey = '';
+  _renderImgThumbs();
+  _renderTxtList();
+  _updateCountBadge();
+  document.getElementById('clfLabelList').innerHTML = '<div style="font-size:.88rem;color:var(--muted);padding:6px 0;" id="clfLabelEmpty">Add at least 2 labels to get started.</div>';
+  _resetPreview();
 }
 
 function _applyMode() {
@@ -1995,8 +2147,8 @@ function _applyMode() {
   document.getElementById('lrGroup').classList.toggle('hidden', isSmart || clf);
   document.getElementById('smartHyperInfo').classList.toggle('hidden', !isSmart);
 
-  // Classifier training mode picker
-  document.getElementById('clfModeGroup').classList.toggle('hidden', !clf);
+  document.getElementById('clf-tm-ml')?.classList.toggle('selected', clf && _clfTrainingMode === 'scratch');
+  document.getElementById('clf-tm-ai')?.classList.toggle('selected', clf && _clfTrainingMode === 'finetune');
   document.getElementById('epochsGroup').classList.toggle('hidden', isSmart);
 
   document.getElementById('trainBtn').textContent = isSmart ? '🎯 Prepare My Bot' : '▶ Train';
@@ -2008,6 +2160,7 @@ function _applyMode() {
     ? '• More diverse photos = richer variety.<br>• Try uploading 10+ images.'
     : clf ? '• Add at least 5 examples per label.<br>• Better labels and cleaner examples improve accuracy.'
     : '• Each new line is one data entry.<br>• Garbage in, garbage out: better quality text creates better results.';
+  _updateCountBadge();
 
   // Test step
   document.getElementById('imgTestWrap').classList.toggle('hidden', !img);
@@ -2022,12 +2175,15 @@ function _applyMode() {
 function startOver() {
   _mode = null; _trained = false; _lossHist = []; _accHist = []; _gotStartEvent = false;
   _smartVizData = []; _smartHighlights = [];
+  _clfTrainingMode = null;
   _nParams = 0; _nData = 0; _trainedEpochs = 0; _finalLoss = null; _finalAccuracy = null;
   _clfLabels = []; _clfCounts = {}; _clfThumbs = {}; _clfActive = null;
   _bBotId = null; _bBotName = 'My Bot'; _bBotEmoji = '🤖';
   _bInputs = []; _bBrain = null; _bOutputs = []; _bRules = [];
   _cardMode = null;
   _setupStage = 1;
+  _paramRevealCount = 1;
+  _paramRevealKey = '';
   _txtItems = [];
   _imgThumbs = [];
   _loadedModelId = null;
@@ -2098,7 +2254,9 @@ function _splitBulkText(raw, mode) {
 
 function _updateCountBadge() {
   if (_mode === 'classifier') return; // per-label counts shown inline
-  const unit = _mode === 'image' ? 'image' : 'text sample';
+  const unit = _mode === 'image' ? 'image'
+             : _mode === 'text' ? 'text entry'
+             : 'item';
   document.getElementById('countBadge').textContent = `${_nData} ${unit}${_nData !== 1 ? 's' : ''} uploaded`;
   if (_mode === 'text' && _textTrainingMode === 'smart_prompt' && _nData > 0) {
     const vs = document.getElementById('smartVizStatus');
@@ -2425,6 +2583,7 @@ function _resetPreview() {
   document.getElementById('txtPreviewWrap').classList.toggle('hidden', _mode !== 'text');
   document.getElementById('smartExplainCard').classList.add('hidden');
   document.getElementById('smartResponsePlot')?.classList.add('hidden');
+  _scatterTipHide();
   _lossHist = []; _accHist = [];
   _drawLoss();
 }
@@ -2434,11 +2593,14 @@ function setChip(btn, group, val) {
   _chips[group] = val;
   btn.closest('.chip-row').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
   btn.classList.add('active');
+  const grp = btn.closest('.hyper-group');
+  if (grp?.id) _touchParam(grp.id);
 }
 
 // ── Training ───────────────────────────────────────────────────────────────────
 function startTraining() {
   if (!_mode) return;
+  if (_mode === 'classifier' && _clfTrainingMode !== 'scratch' && _clfTrainingMode !== 'finetune') return;
   if (_setupStage < 3) return;
   _setupStage = 4;
   _syncSetupFlow();
@@ -2767,6 +2929,62 @@ function _renderConfMatrix(labels, matrix) {
 }
 
 // ── Embedding space visualization ──────────────────────────────────────────────
+function _svgXmlEscape(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function _scatterTipHide() {
+  document.getElementById('scatterTooltip')?.classList.add('hidden');
+}
+
+function _scatterTipShow(ev, text) {
+  const el = document.getElementById('scatterTooltip');
+  if (!el) return;
+  const t = text != null && String(text).trim() ? String(text) : '(empty example)';
+  el.textContent = t;
+  el.classList.remove('hidden');
+  const pad = 12;
+  requestAnimationFrame(() => {
+    const tw = el.offsetWidth, th = el.offsetHeight;
+    let x = ev.clientX + pad, y = ev.clientY + pad;
+    if (x + tw > window.innerWidth - 8) x = Math.max(8, ev.clientX - tw - pad);
+    if (y + th > window.innerHeight - 8) y = Math.max(8, ev.clientY - th - pad);
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+  });
+}
+
+function _attachScatterHover(svg, trainingPoints, responseTip) {
+  if (!svg) return;
+  if (svg._scatterH) {
+    svg.removeEventListener('mousemove', svg._scatterH.move);
+    svg.removeEventListener('mouseleave', svg._scatterH.leave);
+  }
+  const move = (ev) => {
+    const t = ev.target;
+    if (t.tagName !== 'circle') {
+      _scatterTipHide();
+      return;
+    }
+    if (t.classList.contains('scatter-response')) {
+      const tip = responseTip != null && String(responseTip).trim() ? String(responseTip) : 'Response';
+      _scatterTipShow(ev, tip);
+      return;
+    }
+    if (t.classList.contains('scatter-pt')) {
+      const i = parseInt(t.getAttribute('data-idx'), 10);
+      const raw = Number.isFinite(i) && trainingPoints[i] ? trainingPoints[i].text : '';
+      _scatterTipShow(ev, raw);
+      return;
+    }
+    _scatterTipHide();
+  };
+  const leave = () => _scatterTipHide();
+  svg.addEventListener('mousemove', move);
+  svg.addEventListener('mouseleave', leave);
+  svg._scatterH = { move, leave };
+}
+
 function _drawEmbedding(points, highlights) {
   const svg = document.getElementById('embeddingSvg');
   if (!svg || !points.length) return;
@@ -2779,12 +2997,13 @@ function _drawEmbedding(points, highlights) {
     const fill = hi ? 'oklch(60% 0.14 155)' : 'oklch(64% 0.18 283)';
     const r    = hi ? R * 1.45 : R;
     const op   = hi ? '1' : '0.75';
-    const label = (p.text || '').replace(/"/g, '&quot;').slice(0, 60);
-    return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" opacity="${op}"><title>${label}</title></circle>`;
+    const tip  = _svgXmlEscape(p.text || '');
+    return `<circle class="scatter-pt" data-idx="${i}" cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" opacity="${op}"><title>${tip}</title></circle>`;
   }).join('') +
   (highlights.length > 0
-    ? `<text x="2" y="57" font-size="3.5" fill="oklch(60% 0.14 155)" opacity="0.85">● retrieved examples</text>`
+    ? `<g pointer-events="none"><text x="2" y="57" font-size="3.5" fill="oklch(60% 0.14 155)" opacity="0.85">● retrieved examples</text></g>`
     : '');
+  _attachScatterHover(svg, points, null);
 }
 
 function _svgWrapLines(text, maxCharsPerLine, maxLines) {
@@ -2820,8 +3039,8 @@ function _drawResponsePlot(trainingPoints, highlights, responseCoord) {
     const hi  = hiSet.has(i);
     const fill = hi ? 'oklch(60% 0.14 155)' : 'oklch(64% 0.18 283)';
     const r   = hi ? R * 1.45 : R;
-    const tip = (p.text || '').replace(/"/g, '&quot;').slice(0, 120);
-    circles += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" opacity="0.72"><title>${tip}</title></circle>`;
+    const tip = _svgXmlEscape(p.text || '');
+    circles += `<circle class="scatter-pt" data-idx="${i}" cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" opacity="0.72"><title>${tip}</title></circle>`;
 
     if (hi) {
       const fullText = (p.text || '').slice(0, 140);
@@ -2841,17 +3060,19 @@ function _drawResponsePlot(trainingPoints, highlights, responseCoord) {
     }
   });
 
+  const responseTip = responseCoord && responseCoord.text != null ? String(responseCoord.text) : '';
   if (responseCoord) {
     const cx = (responseCoord.x * W).toFixed(1);
     const cy = (responseCoord.y * H).toFixed(1);
-    const tip = ('Response: ' + (responseCoord.text || '')).replace(/"/g, '&quot;').slice(0, 100);
-    circles += `<circle cx="${cx}" cy="${cy}" r="${(R * 1.9).toFixed(1)}" fill="oklch(65% 0.19 35)" stroke="#fff" stroke-width="0.8" opacity="1"><title>${tip}</title></circle>`;
+    const tip = _svgXmlEscape(responseTip ? ('Response:\n' + responseTip) : 'Response');
+    circles += `<circle class="scatter-response" cx="${cx}" cy="${cy}" r="${(R * 1.9).toFixed(1)}" fill="oklch(65% 0.19 35)" stroke="#fff" stroke-width="0.8" opacity="1"><title>${tip}</title></circle>`;
     labels += `<text x="2" y="58.5" font-size="1.8" fill="oklch(65% 0.19 35)" opacity="0.9">● response</text>`;
     labels += `<text x="22" y="58.5" font-size="1.8" fill="oklch(64% 0.18 283)" opacity="0.8">● training examples</text>`;
   }
 
-  svg.innerHTML = circles + labels;
+  svg.innerHTML = circles + '<g pointer-events="none">' + labels + '</g>';
   document.getElementById('smartResponsePlot').classList.remove('hidden');
+  _attachScatterHover(svg, trainingPoints, responseCoord ? ('Response:\n' + responseTip).trim() : '');
 }
 
 // ── Test — generate images ─────────────────────────────────────────────────────
@@ -2918,9 +3139,12 @@ function _fillDeployStats() {
     label = '🖼️ Image Generator (VAE)';
     sub   = 'You built and trained a VAE image generator from scratch. Here\'s what it learned:';
   } else if (_mode === 'classifier') {
-    const tm = _clfTrainingMode === 'finetune' ? 'Fine-tuned MobileNetV3' : 'CNN from scratch';
-    label = `🏷️ Classifier (${tm})`;
-    sub   = `You trained a ${_clfLabels.length}-class image classifier. Here's what it learned:`;
+    const tm = _clfTrainingMode === 'finetune' ? 'AI'
+             : _clfTrainingMode === 'scratch' ? 'Machine Learning'
+             : '—';
+    const kind = _inputMode === 'text' ? 'text' : 'image';
+    label = `🏷️ ${kind.charAt(0).toUpperCase() + kind.slice(1)} Classifier (${tm})`;
+    sub   = `You trained a ${_clfLabels.length}-class classifier. Here's what it learned:`;
   } else if (_textTrainingMode === 'finetune') {
     label = '📝 Text Generator (Fine-tuned DistilGPT-2)';
     sub   = 'You fine-tuned a pretrained language model on your text. Here\'s what it learned:';
@@ -3592,10 +3816,10 @@ function _fmtLibCard(e) {
   const isImg   = e.model_type === 'image_generator';
   const isClf   = e.model_type === 'classifier';
   const badge   = e.training_mode === 'finetune'
-                  ? '<span class="mode-badge">fine-tune</span>'
+                  ? `<span class="mode-badge">${isClf ? 'AI' : 'fine-tune'}</span>`
                   : e.training_mode === 'smart_prompt'
                   ? '<span class="mode-badge smart">🎯 RAG</span>'
-                  : '';
+                  : (isClf ? '<span class="mode-badge">ML</span>' : '');
   const np      = e.training_stats?.n_params || 0;
   const params  = np > 1e6 ? (np / 1e6).toFixed(1) + 'M' : Math.round(np / 1000) + 'K';
   const date    = e.created_at ? e.created_at.slice(0, 10) : '';
@@ -3767,7 +3991,9 @@ async function loadLibModel(id) {
   _inputMode        = data.input_mode    || 'image';
   _loadedModelId    = (data.entry || {}).id || null;
   if (_mode === 'classifier') {
-    _clfTrainingMode = data.training_mode || 'finetune';
+    _clfTrainingMode = (data.training_mode === 'scratch' || data.training_mode === 'finetune')
+      ? data.training_mode
+      : 'finetune';
     const meta = data.entry || {};
     _clfLabels  = meta.labels || [];
     _clfCounts  = Object.fromEntries(_clfLabels.map(l => [l, 0]));
@@ -5140,6 +5366,21 @@ function bldStopBot() {
 
 // ── Init ───────────────────────────────────────────────────────────────────────
 _initAllViz();
+// Progressive parameter reveal (either change current parameter or click Next).
+['epochsGroup','lrGroup','latentGroup','scratchParams','finetuneParams','augGroup','batchGroup'].forEach(id => {
+  const grp = document.getElementById(id);
+  if (!grp || grp.querySelector('.param-next-btn')) return;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn btn-secondary btn-sm param-next-btn';
+  btn.textContent = 'Next →';
+  btn.onclick = () => _nextParamFrom(id);
+  grp.appendChild(btn);
+});
+document.getElementById('setupParamsCol')?.addEventListener('input', (e) => {
+  const grp = e.target.closest('.hyper-group');
+  if (grp?.id) _touchParam(grp.id);
+});
 _render();
 </script>
 </body>
