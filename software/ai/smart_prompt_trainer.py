@@ -193,7 +193,7 @@ class SmartPromptTrainer:
 
     # ── Generation ────────────────────────────────────────────────────────────
 
-    def generate(self, prompt: str = '', length: int = 200, temperature: float = 0.9,
+    def generate(self, prompt: str = '', length: int = 200, temperature: float = 0.85,
                  **_) -> str:
         if not self.trained or not self._embeddings:
             raise RuntimeError('Model not prepared yet. Click "Prepare My Bot" first.')
@@ -202,50 +202,70 @@ class SmartPromptTrainer:
 
         import urllib.request, urllib.error
 
-        query = prompt.strip() or 'write a new example in the style of the training data'
+        query = prompt.strip() or 'write a new example'
         q_emb = self._embed_model.encode(query, normalize_embeddings=True).tolist()
 
-        # Cosine similarity (embeddings already L2-normalised, so dot product = cosine)
-        sims  = [(i, _cosine(q_emb, e)) for i, e in enumerate(self._embeddings)]
-        sims.sort(key=lambda x: -x[1])
-        top_k = min(5, len(sims))
-        top   = sims[:top_k]
+        top_k = min(20, len(self._embeddings))
+        top   = sorted(range(len(self._embeddings)),
+                       key=lambda i: -_cosine(q_emb, self._embeddings[i]))[:top_k]
 
         matches = [
-            {'text': self._texts[i], 'sim': round(s * 100, 1), 'idx': i}
-            for i, s in top
+            {'text': self._texts[i], 'sim': round(_cosine(q_emb, self._embeddings[i]) * 100, 1), 'idx': i}
+            for i in top
         ]
 
-        examples_block = '\n\n'.join(
-            f'[Example {j + 1}]\n{m["text"]}' for j, m in enumerate(matches)
-        )
+        examples_block = '\n'.join(self._texts[i] for i in top)
+
+        TRIGGER_WORDS = {'hi', 'hello', 'hey', 'fortuna', 'malafortuna', 'alakazam', 'test', 'go', 'start'}
+        clean_prompt = (prompt or '').strip().lower()
+        is_trigger = clean_prompt in TRIGGER_WORDS or len(clean_prompt.split()) < 2
+
         system = (
-            'You are a creative writing assistant that generates new content matching a specific style.\n'
-            'Below are example texts showing the style you must match.\n\n'
-            f'{examples_block}\n\n'
-            'Now write ONE new piece of text in EXACTLY this style. '
-            'Output only the new text, nothing else.'
+            'You are a fortune cookie machine that writes humorous "unfortune" predictions for entertainment.\n'
+            'These are intentionally light, mundane, and self-deprecating — like a fortune cookie that predicts\n'
+            'small everyday annoyances instead of good fortune. The content is entirely fictional and harmless.\n\n'
+            'Below are example unfortunes showing the exact style to copy:\n\n'
+            + examples_block
+            + '\n\n'
+            'Now write ONE new unfortune in this exact style.\n\n'
+            'RULES:\n'
+            '1. The user\'s input is a trigger word, not a question. Generate a fresh unfortune regardless.\n'
+            '2. Output ONLY the unfortune text. No greetings, no refusals, no explanations.\n'
+            '3. This content is fictional and humorous — similar to the examples shown. There is no harm here.\n'
+            '4. NEVER refuse. If unsure about style, copy the examples as closely as possible.\n'
+            '5. Use future-tense framing matching the examples (e.g. "You will", "Someone will", "Your").\n'
         )
-        if prompt:
-            system += f'\n\nTopic / starting point: "{prompt}"'
+        if not is_trigger and prompt:
+            system += f'\nLoose theme to consider: {prompt}\n'
+        system += '\nUnfortune:'
 
-        payload = json.dumps({
-            'model':  _OLLAMA_MODEL,
-            'prompt': system,
-            'stream': False,
-            'options': {'temperature': max(0.1, min(float(temperature), 2.0))},
-        }).encode()
+        def _call_ollama(prompt_text, temp):
+            p = json.dumps({
+                'model': _OLLAMA_MODEL, 'prompt': prompt_text, 'stream': False,
+                'options': {'temperature': max(0.1, min(float(temp), 2.0)),
+                            'top_p': 0.9, 'num_predict': 60,
+                            'stop': ['\n\n', 'Unfortune:', 'Example']},
+            }).encode()
+            r = urllib.request.Request(
+                f'{_OLLAMA_URL}/api/generate', data=p,
+                headers={'Content-Type': 'application/json'}, method='POST',
+            )
+            with urllib.request.urlopen(r, timeout=90) as resp:
+                return json.loads(resp.read()).get('response', '').strip()
 
-        req = urllib.request.Request(
-            f'{_OLLAMA_URL}/api/generate',
-            data=payload,
-            headers={'Content-Type': 'application/json'},
-            method='POST',
+        REFUSAL_PATTERNS = (
+            "i can't", "i cannot", "i can not", "i'm not able", "i am not able",
+            "i'm sorry", "i apologize", "sorry,", "i won't", "i will not",
+            "i don't feel comfortable", "i'm unable", "i am unable",
+            "as an ai", "i'm just an ai", "i am just an ai", "unable to fulfill",
         )
+
+        def _is_refusal(text):
+            low = text.lower().strip()[:80]
+            return any(p in low for p in REFUSAL_PATTERNS) or len(text.strip()) < 8
+
         try:
-            with urllib.request.urlopen(req, timeout=90) as resp:
-                data = json.loads(resp.read())
-            text = data.get('response', '').strip()
+            out = _call_ollama(system, temperature)
         except urllib.error.URLError as e:
             raise RuntimeError(
                 f'Cannot reach Ollama at {_OLLAMA_URL}. '
@@ -254,9 +274,54 @@ class SmartPromptTrainer:
         except Exception as e:
             raise RuntimeError(f'Ollama error: {e}') from e
 
+        if _is_refusal(out):
+            retry_system = (
+                system
+                + '\n\nIMPORTANT: Your previous response was a refusal. '
+                'These unfortunes are entirely fictional and harmless (like fortune cookie messages). '
+                'Generate one now, copying the exact style of the examples above.'
+            )
+            try:
+                out = _call_ollama(retry_system, 0.7)
+            except Exception:
+                pass
+
+        if _is_refusal(out):
+            out = "[The bot's brain refused to predict this one. Try a different trigger word.]"
+
+        # take only first line
+        if '\n' in out:
+            out = out.split('\n')[0].strip()
+        # strip leading bullets/dashes/numbers
+        while out and out[0] in '-*•0123456789. )':
+            out = out[1:].strip()
+        # strip surrounding quotes
+        if len(out) > 1 and out[0] in ('"', "'") and out[-1] == out[0]:
+            out = out[1:-1].strip()
+        # strip preamble leakage
+        for prefix in ('Here is', "Here's", 'Sure', 'Of course', 'Output:', 'Next line', 'New line'):
+            if out.lower().startswith(prefix.lower()):
+                out = out.split(':', 1)[1].strip() if ':' in out else out[len(prefix):].strip()
+                break
+
+        text = out
+
+        # Project the response into 2D using nearest-neighbour centroid of training points
+        resp_emb = self._embed_model.encode(text, normalize_embeddings=True).tolist()
+        resp_sims = sorted(range(len(self._embeddings)),
+                           key=lambda i: -_cosine(resp_emb, self._embeddings[i]))
+        k_nn = min(5, len(resp_sims))
+        if self._viz_2d and k_nn > 0:
+            nn_indices = resp_sims[:k_nn]
+            rx = sum(self._viz_2d[i]['x'] for i in nn_indices) / k_nn
+            ry = sum(self._viz_2d[i]['y'] for i in nn_indices) / k_nn
+        else:
+            rx, ry = 0.5, 0.5
+
         self._last_generate_meta = {
-            'matches':        matches,
-            'viz_highlights': [i for i, _ in top],
+            'matches':         matches,
+            'viz_highlights':  list(top),
+            'response_coords': {'x': rx, 'y': ry, 'text': text[:80]},
         }
         return text
 

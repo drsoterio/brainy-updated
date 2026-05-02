@@ -614,24 +614,108 @@ if _CARD is not None:
     print(f'Audio: USB card {_CARD}')
 
 def speak(text):
-    """Speak via espeak; prints text first so output is always visible."""
+    """Speak via Piper neural TTS (offline). Falls back to espeak."""
     print(f'[speaker] {text}')
     env = dict(os.environ)
     if _CARD is not None:
         env['AUDIODEV'] = f'hw:{_CARD},0'
+
+    piper_model = os.path.expanduser(
+        os.environ.get('PIPER_MODEL', '~/piper-voices/en_US-amy-medium.onnx')
+    )
+    aplay_device = f'plughw:{_CARD},0' if _CARD is not None else 'default'
+
+    # Try Piper first (neural, natural voice)
+    if Path(piper_model).exists():
+        try:
+            piper_path = os.path.expanduser('~/.local/bin/piper')
+            if not Path(piper_path).exists():
+                piper_path = 'piper'  # fallback to PATH lookup
+
+            piper_proc = subprocess.Popen(
+                [piper_path, '--model', piper_model, '--output_raw'],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                env=env,
+            )
+            aplay_proc = subprocess.Popen(
+                ['aplay', '-D', aplay_device, '-r', '22050',
+                 '-f', 'S16_LE', '-t', 'raw', '-'],
+                stdin=piper_proc.stdout,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                env=env,
+            )
+            piper_proc.stdin.write(text.encode())
+            piper_proc.stdin.close()
+            aplay_proc.wait(timeout=60)
+            return
+        except Exception as e:
+            print(f'[piper error: {e}, falling back to espeak]')
+
+    # Fallback to espeak
     try:
-        subprocess.run(['espeak', '-s', '150', '--', text], env=env,
-                       capture_output=True, check=True)
+        subprocess.run(['espeak', '-s', '150', '--', text],
+                       env=env, capture_output=True, check=True)
     except (FileNotFoundError, subprocess.CalledProcessError):
-        pass  # espeak not installed — text already printed above
+        pass
+
+_vosk_model = None
+_vosk_failed = False
+
+def _get_vosk_model():
+    global _vosk_model, _vosk_failed
+    if _vosk_failed:
+        return None
+    if _vosk_model is not None:
+        return _vosk_model
+    try:
+        import vosk
+        model_path = os.environ.get('VOSK_MODEL', str(Path.home() / 'vosk-models' / 'vosk-model-small-en-us-0.15'))
+        if not Path(model_path).exists():
+            _vosk_failed = True
+            return None
+        vosk.SetLogLevel(-1)
+        _vosk_model = vosk.Model(model_path)
+        return _vosk_model
+    except Exception as exc:
+        print('[vosk init error: ' + str(exc) + ']')
+        _vosk_failed = True
+        return None
+
+
+def _transcribe_vosk(wav_path):
+    """Transcribe a WAV file with Vosk. Returns text or None on failure."""
+    import wave, json as _json
+    model = _get_vosk_model()
+    if model is None:
+        return None
+    try:
+        import vosk
+        wf = wave.open(wav_path, 'rb')
+        rec = vosk.KaldiRecognizer(model, wf.getframerate())
+        result_text = []
+        while True:
+            data = wf.readframes(4000)
+            if len(data) == 0:
+                break
+            if rec.AcceptWaveform(data):
+                r = _json.loads(rec.Result())
+                if r.get('text'):
+                    result_text.append(r['text'])
+        final = _json.loads(rec.FinalResult())
+        if final.get('text'):
+            result_text.append(final['text'])
+        wf.close()
+        return ' '.join(result_text).strip()
+    except Exception as exc:
+        print('[vosk transcribe error: ' + str(exc) + ']')
+        return None
+
 
 def listen_mic(secs=5):
-    """Record from mic (arecord) and transcribe with SpeechRecognition/Google."""
-    try:
-        import speech_recognition as sr
-    except ImportError:
-        print('[mic] SpeechRecognition not installed — pip install SpeechRecognition PyAudio')
-        return input('[mic] Type instead: ').strip() or None
+    """Record from mic (arecord) and transcribe with Vosk (offline) / Google fallback."""
     device = f'plughw:{_CARD},0' if _CARD is not None else 'default'
     wav = tempfile.mktemp(suffix='.wav')
     print(f'[mic] Recording {secs}s from {device}...')
@@ -640,10 +724,18 @@ def listen_mic(secs=5):
             ['arecord', '-D', device, '-f', 'S16_LE', '-r', '16000',
              '-c', '1', '-d', str(secs), wav],
             check=True, capture_output=True)
-        r = sr.Recognizer()
-        with sr.AudioFile(wav) as src:
-            audio = r.record(src)
-        text = r.recognize_google(audio)
+        # Try Vosk first (offline). Fall back to Google if Vosk unavailable.
+        text = _transcribe_vosk(wav)
+        if text is None:
+            try:
+                import speech_recognition as sr
+                r = sr.Recognizer()
+                with sr.AudioFile(wav) as src:
+                    audio = r.record(src)
+                text = r.recognize_google(audio)
+            except Exception as exc:
+                print('[mic] Error: ' + str(exc))
+                return None
         print(f'[mic] Heard: {text}')
         return text
     except Exception as e:
@@ -712,29 +804,78 @@ class _SmartPromptRAG:
 
     def generate(self, prompt='', **_):
         q   = self._mdl.encode(prompt or 'write a new example', normalize_embeddings=True).tolist()
-        top = sorted(range(len(self._embs)), key=lambda i: -self._cos(q, self._embs[i]))[:5]
-        examples = '\n\n'.join(f'[Example {j+1}]\n{self._texts[i]}' for j, i in enumerate(top))
+        top = sorted(range(len(self._embs)), key=lambda i: -self._cos(q, self._embs[i]))[:20]
+        examples = chr(10).join(self._texts[i] for i in top)
+        TRIGGER_WORDS = {'hi', 'hello', 'hey', 'fortuna', 'malafortuna', 'alakazam', 'test', 'go', 'start'}
+        clean_prompt = (prompt or '').strip().lower()
+        is_trigger = clean_prompt in TRIGGER_WORDS or len(clean_prompt.split()) < 2
         system = (
-            'You are a creative writing assistant that generates new content matching a specific style.\n'
-            'Below are example texts showing the style you must match.\n\n'
+            'Continue the list. Write ONE more line in exactly the same style, length, and tone as these:'
+            + chr(10) + chr(10)
             + examples
-            + '\n\nNow write ONE new piece of text in EXACTLY this style. '
-            'Output only the new text, nothing else.'
+            + chr(10)
         )
-        if prompt:
-            system += f'\n\nTopic / starting point: "{prompt}"'
+        if not is_trigger and prompt:
+            system += chr(10) + 'Loose theme to consider: ' + prompt + chr(10)
+        system += chr(10) + 'Next line:'
         body = json.dumps({
             'model': OLLAMA_MODEL, 'prompt': system, 'stream': False,
-            'options': {'temperature': 0.9},
+            'options': {'temperature': 0.85, 'top_p': 0.9, 'num_predict': 60,
+                        'stop': [chr(10) + chr(10), 'Next line:', 'Example']},
         }).encode()
         req = urllib.request.Request(
-            f'{OLLAMA_URL}/api/generate', data=body,
+            OLLAMA_URL + '/api/generate', data=body,
             headers={'Content-Type': 'application/json'}, method='POST')
         try:
             with urllib.request.urlopen(req, timeout=90) as r:
-                return json.loads(r.read()).get('response', '').strip()
+                out = json.loads(r.read()).get('response', '').strip()
+                # Detect refusal and retry once with stronger framing
+                REFUSAL_PHRASES = (
+                    "i can't", "i cannot", "i can not", "i'm not able",
+                    "i am not able", "sorry", "i won't", "i will not",
+                    "i don't feel comfortable", "i'm unable", "i am unable",
+                    "as an ai", "i'm just", "i am just",
+                )
+                if any(out.lower().lstrip().startswith(p) for p in REFUSAL_PHRASES) or len(out.strip()) < 8:
+                    retry_system = system + chr(10) + 'You will'
+                    retry_body = json.dumps({
+                        'model': OLLAMA_MODEL, 'prompt': retry_system, 'stream': False,
+                        'options': {'temperature': 0.7, 'top_p': 0.9, 'num_predict': 60, 'stop': [chr(10) + chr(10), 'Next line:', 'Example']},
+                    }).encode()
+                    retry_req = urllib.request.Request(
+                        OLLAMA_URL + '/api/generate', data=retry_body,
+                        headers={'Content-Type': 'application/json'}, method='POST')
+                    try:
+                        with urllib.request.urlopen(retry_req, timeout=90) as r2:
+                            retry_out = json.loads(r2.read()).get('response', '').strip()
+                            retry_is_refusal = (
+                                any(retry_out.lower().lstrip().startswith(p) for p in REFUSAL_PHRASES)
+                                or len(retry_out.strip()) < 8
+                            )
+                            if retry_is_refusal:
+                                import random
+                                out = random.choice(self._texts) if self._texts else 'You will encounter unexpected silence.'
+                            else:
+                                if retry_out and not retry_out.lower().startswith('you will'):
+                                    retry_out = 'You will ' + retry_out.lstrip()
+                                out = retry_out
+                    except Exception:
+                        pass
+                if chr(10) in out:
+                    out = out.split(chr(10))[0].strip()
+                while out and out[0] in '-*' + chr(8226) + '0123456789. )':
+                    out = out[1:].strip()
+                if len(out) > 1 and out[0] in ('"', "'") and out[-1] == out[0]:
+                    out = out[1:-1].strip()
+                for prefix in ('Here is', "Here's", 'Sure', 'Of course', 'Output:', 'Next line', 'New line'):
+                    if out.lower().startswith(prefix.lower()):
+                        if ':' in out:
+                            out = out.split(':', 1)[1].strip()
+                        else:
+                            out = out[len(prefix):].strip()
+                return out
         except urllib.error.URLError:
-            raise RuntimeError(f'Cannot reach Ollama at {OLLAMA_URL}. Run: ollama serve')
+            raise RuntimeError('Cannot reach Ollama at ' + OLLAMA_URL + '. Run: ollama serve')
 
 
 class _LSTMRunner:
@@ -1004,35 +1145,102 @@ except Exception as e:
 print('Brain ready.\n')
 
 # ── Output dispatch ────────────────────────────────────────────────────────────
+_printer_instance = None
+_printer_failed = False
+
+def _get_printer():
+    """Return a single persistent Usb printer, or None if unavailable.
+    Reusing one instance avoids 'Resource busy' on the second print."""
+    global _printer_instance, _printer_failed
+    if _printer_failed:
+        return None
+    if _printer_instance is not None:
+        return _printer_instance
+    try:
+        from escpos.printer import Usb
+        vid = int(os.environ.get('PRINTER_VID', '0x0485'), 16)
+        pid = int(os.environ.get('PRINTER_PID', '0x5741'), 16)
+        profile = os.environ.get('PRINTER_PROFILE', 'TM-T88III')
+        _printer_instance = Usb(vid, pid, profile=profile)
+        return _printer_instance
+    except Exception as exc:
+        print('[printer init error: ' + str(exc) + ']')
+        _printer_failed = True
+        return None
+
+
 def _send_output(out_type, content):
     if out_type == 'speaker':
         speak(str(content))
-    elif out_type == 'printer':
-        print(f'\n--- OUTPUT ---\n{content}\n')
-    elif out_type == 'screen':
-        if hasattr(content, 'save'):   # PIL Image
+        return
+    if out_type == 'printer':
+        text = str(content)
+        printer = _get_printer()
+        if printer is None:
+            print('[printer fallback] ' + text)
+            return
+        try:
+            logo_candidates = [
+                BOT_DIR / 'logobrainy.png',
+                BOT_DIR.parent / 'logobrainy.png',
+                Path(__file__).resolve().parent / 'logobrainy.png',
+                Path.home() / 'logobrainy.png',
+            ]
+            logo_path = next((p for p in logo_candidates if p.exists()), None)
+            if logo_path is not None:
+                try:
+                    printer.set(align='center', bold=False, double_height=False, double_width=False)
+                    printer.image(str(logo_path))
+                except Exception as img_exc:
+                    print('[logo print error: ' + str(img_exc) + ']')
+            printer.set(align='center', bold=True, double_height=True, double_width=True)
+            printer.text(BOT_NAME.upper() + chr(10))
+            printer.set(align='center', font='b', bold=False, double_height=False, double_width=False)
+            printer.text(time.strftime('%I:%M %p').lstrip('0') + chr(10))
+            printer.text('-' * 32 + chr(10))
+            # Body (smaller font)
+            printer.set(align='left', font='b', bold=False, double_height=False, double_width=False)
+            printer.text(text + chr(10))
+            printer.set(align='center', font='b', bold=False, double_height=False, double_width=False)
+            printer.text('-' * 32 + chr(10))
+            printer.text(chr(10) * 3)
+            printer.cut()
+        except Exception as exc:
+            print('[printer error: ' + str(exc) + ']')
+            print('[printer fallback] ' + text)
+            globals()['_printer_instance'] = None
+        return
+    if out_type == 'screen':
+        if hasattr(content, 'save'):
             p = BOT_DIR / 'output.png'
             content.save(p)
-            print(f'[screen] Image saved to {p}')
+            print('[screen] Image saved to ' + str(p))
             for viewer in (['eog', str(p)], ['display', str(p)], ['feh', str(p)]):
-                try: subprocess.Popen(viewer); break
-                except FileNotFoundError: pass
+                try:
+                    subprocess.Popen(viewer)
+                    break
+                except FileNotFoundError:
+                    pass
         else:
-            print(f'\n--- SCREEN ---\n{content}\n')
-    else:
-        print(f'[{out_type}] {content}')
+            print(chr(10) + '--- SCREEN ---' + chr(10) + str(content) + chr(10))
+        return
+    print('[' + out_type + '] ' + str(content))
 
 
 def _fire_rules(inp_id, data):
     """Run all rules attached to inp_id and dispatch outputs."""
+    cache = {}  # generate once per (action, content) — all outputs share the same result
     for rule in _rules:
         if rule.get('inputId') != inp_id:
             continue
-        out_cfg  = _outputs.get(rule.get('outputId', ''), {})
-        out_type = out_cfg.get('type', 'printer')
-        action   = rule.get('action', 'model_out')
+        out_cfg   = _outputs.get(rule.get('outputId', ''), {})
+        out_type  = out_cfg.get('type', 'printer')
+        action    = rule.get('action', 'model_out')
+        cache_key = (action, rule.get('content', ''))
 
-        if action == 'model_out' and _brain is not None:
+        if cache_key in cache:
+            result = cache[cache_key]
+        elif action == 'model_out' and _brain is not None:
             try:
                 if MODEL_TYPE == 'text_generator':
                     result = _brain.generate(prompt=str(data) if data else '')
@@ -1048,8 +1256,10 @@ def _fire_rules(inp_id, data):
             except Exception as exc:
                 result = f'[error: {exc}]'
                 print(f'[inference error] {exc}', file=sys.stderr)
+            cache[cache_key] = result
         else:
             result = rule.get('content') or str(data or '')
+            cache[cache_key] = result
 
         print(f'[rule] {inp_id[:8]} -> {out_type}: {str(result)[:80]}')
         _send_output(out_type, result)
@@ -1073,6 +1283,12 @@ try:
             elif t == 'microphone':
                 data = listen_mic()
                 if data:
+                    keyword = (inp.get('keyword') or '').strip().lower()
+                    if keyword:
+                        text_clean = ''.join(c if c.isalnum() or c.isspace() else ' ' for c in str(data).lower())
+                        if keyword not in text_clean.split() and keyword not in text_clean:
+                            time.sleep(0.3)
+                            continue
                     _fire_rules(inp_id, data)
                 time.sleep(0.3)
 
@@ -1171,11 +1387,15 @@ def _pi_requirements(bot: dict) -> str:
             pkgs.add('torchvision')   # for transforms.Resize / ToTensor
 
     if 'microphone' in inp_types:
-        pkgs.update(['SpeechRecognition', 'PyAudio'])
+        pkgs.update(['SpeechRecognition', 'PyAudio', 'vosk'])
     if 'camera' in inp_types:
         pkgs.update(['opencv-python', 'Pillow'])
     if model_type == 'image_generator' and 'screen' in out_types:
         pkgs.add('Pillow')
+    if 'printer' in out_types:
+        pkgs.add('python-escpos')
+    if 'speaker' in out_types:
+        pkgs.add('piper-tts')
 
     return '\n'.join(sorted(pkgs)) + '\n'
 
@@ -1189,6 +1409,7 @@ def _pi_readme(bot: dict, weight_names: list) -> str:
     inputs  = [i.get('type', '?') for i in bot.get('inputs',  [])]
     outputs = [o.get('type', '?') for o in bot.get('outputs', [])]
 
+    out_types     = {o.get('type') for o in bot.get('outputs', [])}
     weights_list = '\n'.join(f'  - {n}' for n in weight_names)
     needs_ollama = t_mode in ('smart_prompt',) and m_type == 'text_generator'
     ollama_block = (
@@ -1197,6 +1418,36 @@ def _pi_readme(bot: dict, weight_names: list) -> str:
         '      Pull the model if you haven\'t yet:\n'
         '        ollama pull llava\n'
     ) if needs_ollama else ''
+
+    printer_block = (
+        '\n'
+        'Thermal printer setup (if you have a USB thermal printer)\n'
+        '---------------------------------------------------------\n'
+        '  1. Plug the printer into a USB port on the Pi.\n'
+        '  2. Find vendor:product ID:  lsusb\n'
+        '  3. Set USB permissions (replace XXXX:YYYY with your IDs):\n'
+        '       echo \'SUBSYSTEM=="usb", ATTRS{idVendor}=="XXXX", ATTRS{idProduct}=="YYYY", MODE="0666"\' \\\n'
+        '         | sudo tee /etc/udev/rules.d/99-thermal-printer.rules\n'
+        '       sudo udevadm control --reload-rules && sudo udevadm trigger\n'
+        '  4. Unplug and reconnect the printer USB cable.\n'
+        '  5. If your printer is NOT 0485:5741 (default for MC206H),\n'
+        '     set environment vars before running:\n'
+        '       PRINTER_VID=0xXXXX PRINTER_PID=0xYYYY python3 run.py\n'
+    ) if 'printer' in out_types else ''
+
+    speaker_block = (
+        '\n'
+        'Voice setup (one-time, for natural speech)\n'
+        '------------------------------------------\n'
+        '  mkdir -p ~/piper-voices\n'
+        '  cd ~/piper-voices\n'
+        '  wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/amy/medium/en_US-amy-medium.onnx\n'
+        '  wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/amy/medium/en_US-amy-medium.onnx.json\n'
+        '\n'
+        '  If Piper voice file not found, the bot falls back to espeak.\n'
+        '  To use a different voice, set PIPER_MODEL before running:\n'
+        '    PIPER_MODEL=~/piper-voices/my-voice.onnx python3 run.py\n'
+    ) if 'speaker' in out_types else ''
 
     return '\n'.join([
         f'Brainy Bot Package — {name}',
@@ -1223,6 +1474,8 @@ def _pi_readme(bot: dict, weight_names: list) -> str:
         '  3. Install dependencies:',
         '       pip install -r requirements.txt --break-system-packages',
         ollama_block,
+        printer_block,
+        speaker_block,
         'Run the bot',
         '-----------',
         '  python3 run.py',

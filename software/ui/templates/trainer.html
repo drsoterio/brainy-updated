@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>brainy</title>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/flubber@0.4.2/build/flubber.min.js"></script>
+  <script src="https://unpkg.com/flubber@0.4.2/build/flubber.min.js" async></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -201,6 +201,7 @@
     ───────────────────────────────────────────────── */
     .train-layout { display: flex; flex-direction: column; gap: 14px; }
     .row2-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: stretch; }
+    #setupDataCol.smart-full { grid-column: 1 / -1; }
     .row3-grid { display: grid; grid-template-columns: 3fr 1fr; gap: 14px; align-items: stretch; }
     .stats-sidebar { display: flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 18px; min-width: 0; }
     @media (max-width: 1100px) { .row2-grid, .row3-grid { grid-template-columns: 1fr; } }
@@ -318,6 +319,8 @@
     ───────────────────────────────────────────────── */
     .test-layout { display: grid; grid-template-columns: 1fr 270px; gap: 16px; align-items: start; }
     @media (max-width: 700px) { .test-layout { grid-template-columns: 1fr; } }
+    .smart-mode .test-layout { grid-template-columns: 1fr; }
+    .smart-mode .test-controls { display: none; }
 
     .test-frame { background: var(--card-bg); border: 2px solid var(--border); border-radius: 14px; overflow: hidden; }
     .test-frame img { width: 100%; display: block; }
@@ -415,10 +418,10 @@
     .smart-stage-row  { display: flex; align-items: flex-start; gap: 7px; font-size: .92rem; color: oklch(36% 0.1 155); line-height: 1.5; }
     .smart-unavail { background: #fef3c7; border: 1px solid #fde68a; border-radius: 10px; padding: 9px 12px; font-size: .9rem; color: #92400e; line-height: 1.55; }
     /* Embedding viz */
-    #embeddingSvg { display: block; width: 100%; border-radius: 10px; background: #0d0a1a; }
-    /* Smart context panel in test page */
-    .ctx-match { background: #0f172a; border: 1px solid oklch(28% 0.05 260); border-radius: 8px; padding: 7px 10px; font-size: .88rem; color: #94a3b8; line-height: 1.45; display: flex; gap: 8px; align-items: baseline; }
-    .ctx-sim { font-size: .85rem; font-weight: 800; color: oklch(60% 0.14 155); flex-shrink: 0; }
+    #embeddingSvg { display: block; width: 100%; border-radius: 10px; background: #0d0a1a; flex: 1; min-height: 500px; }
+    /* Smart Prompt test — response scatter plot */
+    #responseEmbedSvg { display: block; width: 100%; border-radius: 10px; background: #0d0a1a; min-height: 260px; }
+    .smart-trained-badge { display: inline-block; background: #dcfce7; color: #166534; border-radius: 999px; padding: 3px 12px; font-size: .82rem; font-weight: 700; margin-bottom: 8px; }
     .tmc-card.unavailable { opacity: .5; cursor: not-allowed; pointer-events: none; }
 
     /* ── Full-page library overlay ─────────────────── */
@@ -511,6 +514,10 @@
     .bld-card-sub { font-size:.78rem; color:var(--muted); }
     .bld-card-rm { background:none; border:none; color:var(--muted); cursor:pointer; font-size:.85rem; padding:3px 7px; border-radius:6px; flex-shrink:0; transition:background .1s,color .1s; }
     .bld-card-rm:hover { background:#fee2e2; color:#dc2626; }
+    .bld-card-kw { display:flex; align-items:center; gap:6px; margin-top:7px; padding-top:7px; border-top:1px solid var(--border); }
+    .bld-card-kw-label { font-size:.73rem; color:var(--muted); white-space:nowrap; flex-shrink:0; }
+    .bld-card-kw-input { flex:1; padding:3px 8px; border:1.5px solid var(--border); border-radius:8px; font-size:.78rem; background:var(--bg); color:var(--text); outline:none; font-family:inherit; }
+    .bld-card-kw-input:focus { border-color:var(--primary); }
     .bld-add-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
     .bld-add-lbl { font-size:.82rem; font-weight:700; color:var(--muted); }
     .bld-brain-card { background:var(--card); border:2px solid var(--primary-mid); border-radius:14px; padding:12px 14px; display:flex; align-items:center; gap:12px; }
@@ -569,14 +576,14 @@
     .sim-speaker-wrap { padding:12px; text-align:center; }
     .sim-speaker-icon { font-size:1.8rem; opacity:.3; transition:opacity .3s; }
     .sim-speaker-icon.active { opacity:1; animation:spk-pulse .5s ease-in-out infinite alternate; }
-    .sim-printer-paper { background:#f9f6f1; padding:12px 14px; font-family:'Courier New',monospace; font-size:.8rem; color:#3d3229; min-height:60px; max-height:180px; overflow-y:auto; line-height:1.8; }
+    .sim-printer-paper { background:#f9f6f1; padding:12px 14px; font-family:'Courier New',monospace; font-size:.8rem; color:#3d3229; min-height:60px; max-height:180px; overflow-y:auto; line-height:1.8; white-space:pre-wrap; }
     .sim-sound-txt { padding:10px; font-size:.85rem; color:var(--muted); text-align:center; }
     @keyframes spk-pulse { to { opacity:.6; } }
 
     /* Compare card (train page, post-training) */
     .cmp-section { padding: 9px 14px; border-bottom: 1px solid var(--border); }
     .cmp-sh   { font-size: .95rem; font-weight: 800; color: var(--primary-dark); margin-bottom: 4px; }
-    .cmp-stat { font-size: .95rem; font-weight: 600; color: var(--text); margin-bottom: 5px; line-height: 1.4; }
+    .cmp-stat { font-size: .84rem; font-weight: 400; color: var(--text); margin-bottom: 5px; line-height: 1.5; }
     .cmp-blist { display: flex; flex-direction: column; gap: 2px; margin-bottom: 5px; }
     .cmp-blist div { font-size: .77rem; color: var(--muted); line-height: 1.4; }
     .cmp-blist .mine { color: var(--primary-dark); font-weight: 700; }
@@ -851,6 +858,8 @@
           </div>
           <div id="txtList" style="display:flex;flex-direction:column;gap:5px;"></div>
           <button class="btn btn-primary btn-full hidden" id="toParamsBtn" onclick="continueToParams()" style="margin-top:8px;">Next: Set Parameters →</button>
+          <!-- Smart Prompt mode: inline prepare button (no params step needed) -->
+          <button class="btn btn-primary btn-full hidden" id="smartPrepareInDataBtn" onclick="startTraining()" style="margin-top:8px;">🎯 Prepare My Bot</button>
         </div>
 
           <div class="hyper-col" id="setupParamsCol">
@@ -1003,12 +1012,12 @@
           </div>
 
           <!-- Smart Prompt: embedding space visualization (shown after prepare) -->
-          <div id="smartVizWrap" class="hidden" style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+          <div id="smartVizWrap" class="hidden" style="display:flex;flex-direction:column;gap:6px;flex:1;min-height:0;">
             <div>
               <div class="panel-title" style="font-size:.75rem;margin-bottom:2px;">🗺️ Shared pattern from your data</div>
               <div id="smartVizStatus" style="font-size:.77rem;color:var(--primary);font-weight:700;line-height:1.4;"></div>
             </div>
-            <svg id="embeddingSvg" viewBox="0 0 100 60" preserveAspectRatio="xMidYMid meet" height="150"></svg>
+            <svg id="embeddingSvg" viewBox="0 0 100 60" preserveAspectRatio="xMidYMid meet"></svg>
             <div style="font-size:.72rem;color:var(--muted);line-height:1.4;text-align:center;">
               Examples that "mean" similar things sit close together. The bot searches this map when you ask something new.
             </div>
@@ -1169,6 +1178,7 @@
 
           <!-- Text output — chat interface -->
           <div id="txtTestWrap" class="hidden">
+            <div id="smartTrainedBadge" class="smart-trained-badge hidden">✓ Model trained</div>
             <div class="chat-wrap">
               <div class="chat-msgs" id="chatMsgs">
                 <div class="msg-thinking" id="chatEmpty">Type a message below and your model will respond ✨</div>
@@ -1178,10 +1188,12 @@
                 <button class="btn btn-primary btn-sm" onclick="sendChat()">Send →</button>
               </div>
             </div>
-            <!-- Smart Prompt: show which examples were retrieved -->
-            <div id="smartContextPanel" class="hidden" style="margin-top:10px;">
-              <div class="panel-title" style="margin-bottom:5px;">📎 Examples used to guide LLaVA</div>
-              <div id="smartContextList" style="display:flex;flex-direction:column;gap:5px;"></div>
+            <!-- Smart Prompt: response position in embedding space -->
+            <div id="smartResponsePlot" class="hidden" style="margin-top:12px;">
+              <svg id="responseEmbedSvg" viewBox="0 0 100 60" preserveAspectRatio="xMidYMid meet"></svg>
+              <div style="font-size:.78rem;color:var(--muted);margin-top:6px;text-align:center;">
+                The coral dot shows where your bot's answer sits in the pattern map. Closer dots = more similar in meaning.
+              </div>
             </div>
           </div>
         </div>
@@ -1901,22 +1913,33 @@ function _syncSetupFlow() {
   if (onTrain && _setupStage >= 3 && !dataReady) _setupStage = 2;
   if (onTrain && _setupStage === 2 && dataReady) _setupStage = 3;
 
+  const isSmart    = _textTrainingMode === 'smart_prompt';
   const dataCol    = document.getElementById('setupDataCol');
   const paramsCol  = document.getElementById('setupParamsCol');
   const previewCol = document.getElementById('setupPreviewCol');
   const row3       = document.querySelector('.row3-grid');
-  const statsSidebar = document.getElementById('statsSidebar');
+
   dataCol?.classList.toggle('hidden', !onTrain || _setupStage < 2);
-  paramsCol?.classList.toggle('hidden', !onTrain || _setupStage < 3);
+  // Smart Prompt: data col expands full-width, params col hidden
+  dataCol?.classList.toggle('smart-full', isSmart);
+  paramsCol?.classList.toggle('hidden', !onTrain || _setupStage < 3 || isSmart);
   // Row 3 (preview + stats sidebar) appears only once training has started
   if (row3) row3.classList.toggle('hidden', !onTrain || _setupStage < 4);
   previewCol?.classList.toggle('hidden', !onTrain || _setupStage < 4);
 
   const toParamsBtn = document.getElementById('toParamsBtn');
   if (toParamsBtn) {
-    toParamsBtn.classList.toggle('hidden', !onTrain || _setupStage !== 2);
+    // Hide for smart_prompt (replaced by inline prepare button)
+    toParamsBtn.classList.toggle('hidden', !onTrain || _setupStage !== 2 || isSmart);
     toParamsBtn.disabled = !dataReady;
     toParamsBtn.textContent = dataReady ? 'Next: Set Parameters →' : 'Add data to continue →';
+  }
+
+  const smartPrepBtn = document.getElementById('smartPrepareInDataBtn');
+  if (smartPrepBtn) {
+    smartPrepBtn.classList.toggle('hidden', !onTrain || !isSmart || _setupStage < 2);
+    smartPrepBtn.disabled = !dataReady;
+    smartPrepBtn.textContent = dataReady ? '🎯 Prepare My Bot' : 'Add data to continue →';
   }
 
   const trainBtn = document.getElementById('trainBtn');
@@ -2075,6 +2098,14 @@ function _updateCountBadge() {
   if (_mode === 'classifier') return; // per-label counts shown inline
   const unit = _mode === 'image' ? 'image' : 'text sample';
   document.getElementById('countBadge').textContent = `${_nData} ${unit}${_nData !== 1 ? 's' : ''} uploaded`;
+  if (_mode === 'text' && _textTrainingMode === 'smart_prompt' && _nData > 0) {
+    const vs = document.getElementById('smartVizStatus');
+    const se = document.getElementById('seExamples');
+    if (vs) vs.textContent = `${_nData} example${_nData !== 1 ? 's' : ''} → click "Prepare My Bot" to embed`;
+    if (se) se.textContent =
+      `You gave ${_nData} example${_nData !== 1 ? 's' : ''}. ` +
+      `Click "Prepare My Bot" to convert them into 384-dimensional vectors.`;
+  }
 }
 
 function _renderTxtList() {
@@ -2390,7 +2421,7 @@ function _resetPreview() {
   document.getElementById('smartVizStatus').textContent = '';
   document.getElementById('txtPreviewWrap').classList.toggle('hidden', _mode !== 'text');
   document.getElementById('smartExplainCard').classList.add('hidden');
-  document.getElementById('smartContextPanel')?.classList.add('hidden');
+  document.getElementById('smartResponsePlot')?.classList.add('hidden');
   _lossHist = []; _accHist = [];
   _drawLoss();
 }
@@ -2753,6 +2784,73 @@ function _drawEmbedding(points, highlights) {
     : '');
 }
 
+function _svgWrapLines(text, maxCharsPerLine, maxLines) {
+  const words = text.split(' ');
+  const lines = [];
+  let cur = '';
+  for (const w of words) {
+    const candidate = cur ? cur + ' ' + w : w;
+    if (candidate.length <= maxCharsPerLine) {
+      cur = candidate;
+    } else {
+      if (cur) lines.push(cur);
+      if (lines.length >= maxLines) break;
+      cur = w;
+    }
+  }
+  if (cur && lines.length < maxLines) lines.push(cur);
+  return lines;
+}
+
+function _drawResponsePlot(trainingPoints, highlights, responseCoord) {
+  const svg = document.getElementById('responseEmbedSvg');
+  if (!svg || !trainingPoints.length) return;
+  const W = 100, H = 60, R = 2.6;
+  const hiSet = new Set(highlights);
+  const FS = 1.3, LH = 1.9; // font-size and line-height in SVG units
+
+  // Circles first, labels on top
+  let circles = '', labels = '';
+  trainingPoints.forEach((p, i) => {
+    const cx  = (p.x * W).toFixed(1);
+    const cy  = (p.y * H).toFixed(1);
+    const hi  = hiSet.has(i);
+    const fill = hi ? 'oklch(60% 0.14 155)' : 'oklch(64% 0.18 283)';
+    const r   = hi ? R * 1.45 : R;
+    const tip = (p.text || '').replace(/"/g, '&quot;').slice(0, 120);
+    circles += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" opacity="0.72"><title>${tip}</title></circle>`;
+
+    if (hi) {
+      const fullText = (p.text || '').slice(0, 140);
+      const lines = _svgWrapLines(fullText, 52, 2);
+      const lx    = parseFloat(cx);
+      const boxH  = lines.length * LH + 0.9;
+      const maxLen = Math.max(...lines.map(l => l.length));
+      const boxW  = Math.min(maxLen * 0.76 + 2, 58);
+      // position label above the dot, clamp so it doesn't go off the top
+      const topY  = Math.max(boxH + 0.5, parseFloat(cy) - r - 1.0);
+      labels += `<rect x="${(lx - boxW/2).toFixed(1)}" y="${(topY - boxH).toFixed(1)}" width="${boxW.toFixed(1)}" height="${boxH.toFixed(1)}" rx="0.8" fill="#0d0a1a" opacity="0.82"/>`;
+      lines.forEach((line, j) => {
+        const safe = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const ty   = (topY - boxH + 1.3 + j * LH).toFixed(1);
+        labels += `<text x="${lx.toFixed(1)}" y="${ty}" text-anchor="middle" font-size="${FS}" fill="oklch(72% 0.14 155)" font-family="system-ui,sans-serif">${safe}</text>`;
+      });
+    }
+  });
+
+  if (responseCoord) {
+    const cx = (responseCoord.x * W).toFixed(1);
+    const cy = (responseCoord.y * H).toFixed(1);
+    const tip = ('Response: ' + (responseCoord.text || '')).replace(/"/g, '&quot;').slice(0, 100);
+    circles += `<circle cx="${cx}" cy="${cy}" r="${(R * 1.9).toFixed(1)}" fill="oklch(65% 0.19 35)" stroke="#fff" stroke-width="0.8" opacity="1"><title>${tip}</title></circle>`;
+    labels += `<text x="2" y="58.5" font-size="1.8" fill="oklch(65% 0.19 35)" opacity="0.9">● response</text>`;
+    labels += `<text x="22" y="58.5" font-size="1.8" fill="oklch(64% 0.18 283)" opacity="0.8">● training examples</text>`;
+  }
+
+  svg.innerHTML = circles + labels;
+  document.getElementById('smartResponsePlot').classList.remove('hidden');
+}
+
 // ── Test — generate images ─────────────────────────────────────────────────────
 async function generateImages() {
   const n   = parseInt(_chips.n) || 16;
@@ -2792,6 +2890,10 @@ function _fmtParams(n) {
 function _fillTestInfo() {
   document.getElementById('modelInfoTxt').textContent =
     `${_fmtParams(_nParams)} parameters · ${_nData} ${_mode === 'image' ? 'images' : 'texts'} · final loss ${_finalLoss ?? '—'}`;
+  const isSmart = _textTrainingMode === 'smart_prompt';
+  // Apply/remove full-width mode for Smart Prompt
+  document.querySelectorAll('.step').forEach(s => s.classList.toggle('smart-mode', isSmart));
+  document.getElementById('smartTrainedBadge')?.classList.toggle('hidden', !isSmart);
 }
 
 function _fillDeployStats() {
@@ -3037,21 +3139,12 @@ async function sendChat() {
   msgs.appendChild(botBubble);
   msgs.scrollTop = msgs.scrollHeight;
 
-  // For Smart Prompt: show which examples were retrieved and re-draw highlighted viz
-  if (d.ok && d.matches && _textTrainingMode === 'smart_prompt') {
-    const panel = document.getElementById('smartContextPanel');
-    const list  = document.getElementById('smartContextList');
-    if (panel && list) {
-      list.innerHTML = d.matches.map(m =>
-        `<div class="ctx-match">
-           <span class="ctx-sim">${m.sim}%</span>
-           <span>${(m.text || '').slice(0, 90)}${(m.text || '').length > 90 ? '…' : ''}</span>
-         </div>`
-      ).join('');
-      panel.classList.remove('hidden');
-    }
+  // For Smart Prompt: draw response scatter plot
+  if (d.ok && _textTrainingMode === 'smart_prompt') {
     _smartHighlights = d.viz_highlights || [];
-    if (_smartVizData.length) _drawEmbedding(_smartVizData, _smartHighlights);
+    if (_smartVizData.length) {
+      _drawResponsePlot(_smartVizData, _smartHighlights, d.response_coords || null);
+    }
   }
 }
 
@@ -3448,10 +3541,13 @@ async function loadModel(modelId) {
   fetch('/api/info').then(r => r.json()).then(d => {
     _nParams    = d.n_params || 0;
     _finalLoss  = d.loss ?? null;
+    _nData      = d.count  || 0;
     // Restore embedding viz for smart_prompt models
     if (_textTrainingMode === 'smart_prompt' && d.viz_2d && d.viz_2d.length > 0) {
       _smartVizData = d.viz_2d;
     }
+    _updateCountBadge();
+    _syncSetupFlow();
   });
   goTo(2);
 }
@@ -3672,7 +3768,10 @@ async function loadLibModel(id) {
   fetch('/api/info').then(r => r.json()).then(d => {
     _nParams   = d.n_params || 0;
     _finalLoss = d.loss ?? null;
+    _nData     = d.count  || 0;
     if (_textTrainingMode === 'smart_prompt' && d.viz_2d?.length) _smartVizData = d.viz_2d;
+    _updateCountBadge();
+    _syncSetupFlow();
   });
   closeLibrary();
   goTo(2);
@@ -4161,12 +4260,28 @@ function bldRemoveInput(id) {
 function _bRenderInputs() {
   document.getElementById('bldInputCards').innerHTML = _bInputs.map(inp => {
     const c = _INPUT_CFG[inp.type];
-    return `<div class="bld-card">
-      <span class="bld-card-ico">${c.icon}</span>
-      <div class="bld-card-info"><div class="bld-card-label">${c.label}</div><div class="bld-card-sub">${c.sub}</div></div>
-      <button class="bld-card-rm" onclick="bldRemoveInput('${inp.id}')" title="Remove">✕</button>
+    const hasKw = inp.type === 'microphone' || inp.type === 'textinput';
+    const kwPlaceholder = inp.type === 'microphone' ? 'e.g. unfortune, hello, start' : 'e.g. ask, go, !bot';
+    const kwRow = hasKw ? `
+      <div class="bld-card-kw">
+        <span class="bld-card-kw-label">🔑 Trigger keyword (optional):</span>
+        <input class="bld-card-kw-input" type="text" placeholder="${kwPlaceholder}"
+               value="${(inp.keyword || '').replace(/"/g,'&quot;')}"
+               oninput="bldSetInputKeyword('${inp.id}', this.value)">
+      </div>` : '';
+    return `<div class="bld-card" style="flex-direction:column;align-items:stretch;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="bld-card-ico">${c.icon}</span>
+        <div class="bld-card-info"><div class="bld-card-label">${c.label}</div><div class="bld-card-sub">${c.sub}</div></div>
+        <button class="bld-card-rm" onclick="bldRemoveInput('${inp.id}')" title="Remove">✕</button>
+      </div>${kwRow}
     </div>`;
   }).join('');
+}
+
+function bldSetInputKeyword(id, value) {
+  const inp = _bInputs.find(i => i.id === id);
+  if (inp) inp.keyword = value;
 }
 
 // ── Brain picker ──────────────────────────────────────────────────────────────
@@ -4236,14 +4351,80 @@ function bldRemoveOutput(id) {
 }
 
 function _bRenderOutputs() {
+  const TEXT_OUTPUTS = new Set(['screen', 'speaker', 'printer']);
   document.getElementById('bldOutputCards').innerHTML = _bOutputs.map(out => {
     const c = _OUTPUT_CFG[out.type];
-    return `<div class="bld-card">
-      <span class="bld-card-ico">${c.icon}</span>
-      <div class="bld-card-info"><div class="bld-card-label">${c.label}</div><div class="bld-card-sub">${c.sub}</div></div>
-      <button class="bld-card-rm" onclick="bldRemoveOutput('${out.id}')" title="Remove">✕</button>
+    const hasTemplate = TEXT_OUTPUTS.has(out.type);
+    if (!hasTemplate) {
+      return `<div class="bld-card">
+        <span class="bld-card-ico">${c.icon}</span>
+        <div class="bld-card-info"><div class="bld-card-label">${c.label}</div><div class="bld-card-sub">${c.sub}</div></div>
+        <button class="bld-card-rm" onclick="bldRemoveOutput('${out.id}')" title="Remove">✕</button>
+      </div>`;
+    }
+    const imgRow = (slot, label) => {
+      if (out.type !== 'printer') return '';
+      const imgData = out[slot + 'Image'];
+      const preview = imgData
+        ? `<img src="${imgData}" style="height:28px;width:auto;border-radius:4px;border:1px solid var(--border);flex-shrink:0;">
+           <button onclick="bldClearOutputImage('${out.id}','${slot}')" class="bld-card-rm" title="Remove image" style="margin-left:2px;">✕</button>`
+        : `<span style="font-size:.72rem;color:var(--muted);">none</span>`;
+      return `
+      <div class="bld-card-kw">
+        <span class="bld-card-kw-label">🖼 ${label} image:</span>
+        <label style="cursor:pointer;flex-shrink:0;padding:3px 8px;border:1.5px solid var(--border);border-radius:8px;font-size:.75rem;background:var(--bg);color:var(--text);white-space:nowrap;">
+          📁 Upload<input type="file" accept="image/*" style="display:none;" onchange="bldSetOutputImage('${out.id}','${slot}',this)">
+        </label>
+        ${preview}
+      </div>`;
+    };
+    return `<div class="bld-card" style="flex-direction:column;align-items:stretch;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="bld-card-ico">${c.icon}</span>
+        <div class="bld-card-info"><div class="bld-card-label">${c.label}</div><div class="bld-card-sub">${c.sub}</div></div>
+        <button class="bld-card-rm" onclick="bldRemoveOutput('${out.id}')" title="Remove">✕</button>
+      </div>
+      <div class="bld-card-kw">
+        <span class="bld-card-kw-label">📝 Header (optional):</span>
+        <input class="bld-card-kw-input" type="text" placeholder="e.g. Dear friend,"
+               value="${(out.prefix || '').replace(/"/g,'&quot;')}"
+               oninput="bldSetOutputPrefix('${out.id}', this.value)">
+      </div>${imgRow('prefix', 'Header')}
+      <div class="bld-card-kw">
+        <span class="bld-card-kw-label">📝 Footer (optional):</span>
+        <input class="bld-card-kw-input" type="text" placeholder="e.g. — Carolina"
+               value="${(out.suffix || '').replace(/"/g,'&quot;')}"
+               oninput="bldSetOutputSuffix('${out.id}', this.value)">
+      </div>${imgRow('suffix', 'Footer')}
     </div>`;
   }).join('');
+}
+
+function bldSetOutputPrefix(id, value) {
+  const out = _bOutputs.find(o => o.id === id);
+  if (out) out.prefix = value;
+}
+
+function bldSetOutputSuffix(id, value) {
+  const out = _bOutputs.find(o => o.id === id);
+  if (out) out.suffix = value;
+}
+
+function bldSetOutputImage(id, slot, fileInput) {
+  const out  = _bOutputs.find(o => o.id === id);
+  const file = fileInput.files[0];
+  if (!out || !file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    out[slot + 'Image'] = e.target.result;
+    _bRenderOutputs();
+  };
+  reader.readAsDataURL(file);
+}
+
+function bldClearOutputImage(id, slot) {
+  const out = _bOutputs.find(o => o.id === id);
+  if (out) { out[slot + 'Image'] = null; _bRenderOutputs(); }
 }
 
 // ── Rules ─────────────────────────────────────────────────────────────────────
@@ -4621,6 +4802,11 @@ async function _simStartMic() {
       _bInputs.filter(i => i.type === 'microphone').forEach(inp => {
         const heard = document.getElementById('simspeech-' + inp.id);
         if (heard) { heard.style.display = 'block'; heard.textContent = '🗣 "' + transcript + '"'; }
+        const kw = (inp.keyword || '').trim().toLowerCase();
+        if (kw && !transcript.toLowerCase().includes(kw)) {
+          _simLogAdd(`🔑 Keyword "${inp.keyword}" not heard — skipped`, 'sys');
+          return;
+        }
         _bRules.filter(r => r.inputId === inp.id && r.trigger === 'speech')
                .forEach(rule => _simFireRule(rule, {source:'speech', text: transcript}));
       });
@@ -4660,6 +4846,14 @@ function _simKeyHandler(e) {
 
 function _simTxtSubmit(inpId, text) {
   if (!_simRunning || _simPaused || !text.trim()) return;
+  const inp = _bInputs.find(i => i.id === inpId);
+  if (inp) {
+    const kw = (inp.keyword || '').trim().toLowerCase();
+    if (kw && !text.toLowerCase().includes(kw)) {
+      _simLogAdd(`🔑 Keyword "${inp.keyword}" not in text — skipped`, 'sys');
+      return;
+    }
+  }
   _bRules.filter(r => r.inputId === inpId && r.trigger === 'submitted')
          .forEach(rule => _simFireRule(rule, {source:'text', text}));
 }
@@ -4767,38 +4961,62 @@ function _simActivateOutput(out, content) {
       const el = document.getElementById('simscreen-' + out.id);
       if (!el) return;
       if (content.type === 'image') {
-        el.innerHTML = `<img src="data:image/png;base64,${content.data}" alt="generated">`;
+        el.innerHTML = `<img src=”data:image/png;base64,${content.data}” alt=”generated”>`;
       } else {
-        el.textContent = content.data;
+        const pre = out.prefix ? out.prefix + '\n' : '';
+        const suf = out.suffix ? '\n' + out.suffix : '';
+        el.textContent = pre + content.data + suf;
       }
       break;
     }
     case 'speaker': {
-      const text = content.type === 'text' ? content.data : '';
+      const rawText = content.type === 'text' ? content.data : '';
       if (!('speechSynthesis' in window)) {
         _simLogAdd('⚠ Browser doesn\'t support text-to-speech', 'err');
         break;
       }
-      if (!text) {
+      if (!rawText) {
         _simLogAdd('⚠ Speaker received no text to speak', 'err');
         break;
       }
+      const pre  = out.prefix ? out.prefix + ' ' : '';
+      const suf  = out.suffix ? ' ' + out.suffix : '';
+      const text = pre + rawText + suf;
       const txtEl = document.getElementById('simspeakertxt-' + out.id);
       if (txtEl) txtEl.textContent = '”' + text + '”';
       _simLogAdd(`🔊 Speaker said: “${text.length > 60 ? text.slice(0, 60) + '…' : text}”`, 'out');
+      window._utterances = window._utterances || [];
       const utt  = new SpeechSynthesisUtterance(text);
       const icon = document.getElementById('simspeaker-' + out.id);
-      if (icon) { icon.classList.add('active'); utt.onend = () => icon.classList.remove('active'); }
-      utt.onerror = (e) => _simLogAdd('⚠ TTS error: ' + e.error, 'err');
+      if (icon) icon.classList.add('active');
+      utt.onend = () => {
+        if (icon) icon.classList.remove('active');
+        window._utterances = window._utterances.filter(x => x !== utt);
+      };
+      utt.onerror = (e) => {
+        if (icon) icon.classList.remove('active');
+        window._utterances = window._utterances.filter(x => x !== utt);
+        _simLogAdd('⚠ TTS error: ' + e.error, 'err');
+      };
+      window._utterances.push(utt);
       window.speechSynthesis.speak(utt);
       break;
     }
     case 'printer': {
       const el = document.getElementById('simprinter-' + out.id);
       if (!el) return;
-      const text = content.type === 'text' ? content.data : '';
-      const ts   = new Date().toLocaleTimeString();
-      el.textContent += `[${ts}]\n${text}\n${'─'.repeat(24)}\n`;
+      const rawText = content.type === 'text' ? content.data : '';
+      const ts  = new Date().toLocaleTimeString();
+      const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const img = src => `<img src="${src}" style="max-width:100%;height:auto;display:block;margin:3px 0;">`;
+      let chunk = `<span style="color:#8b7355;font-size:.7rem;">[${esc(ts)}]</span>\n`;
+      if (out.prefixImage) chunk += img(out.prefixImage) + '\n';
+      if (out.prefix)      chunk += esc(out.prefix) + '\n';
+      chunk += esc(rawText);
+      if (out.suffix)      chunk += '\n' + esc(out.suffix);
+      if (out.suffixImage) chunk += '\n' + img(out.suffixImage);
+      chunk += '\n' + '─'.repeat(24) + '\n';
+      el.innerHTML += chunk;
       el.scrollTop = el.scrollHeight;
       break;
     }
