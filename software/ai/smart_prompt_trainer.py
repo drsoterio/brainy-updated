@@ -360,4 +360,5 @@ class SmartPromptTrainer:
             'loss':       None,
             'n_dims':     n_dims,
             'viz_2d':     self._viz_2d,
+            'texts':      self._texts,
         }

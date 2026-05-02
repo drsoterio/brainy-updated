@@ -281,6 +281,7 @@ class TextTrainer:
             'loc2tok':     self._loc2tok,
             'eos_loc':     self._eos_loc,
             'history':     self.history,
+            'texts':       self._texts,
         }, path)
 
     def load(self, path) -> None:
@@ -297,14 +298,16 @@ class TextTrainer:
         self._model.eval()
         self.trained    = True
         self.history    = ckpt.get('history', {'loss': []})
+        self._texts     = ckpt.get('texts', [])
 
     def get_info(self) -> dict:
         if self._model is None:
-            return {'trained': False, 'count': len(self._texts)}
+            return {'trained': False, 'count': len(self._texts), 'texts': self._texts}
         return {
             'trained':    self.trained,
             'n_params':   sum(p.numel() for p in self._model.parameters()),
             'vocab_size': len(self._tok2loc),
             'count':      len(self._texts),
             'loss':       self.history['loss'][-1] if self.history['loss'] else None,
+            'texts':      self._texts,
         }

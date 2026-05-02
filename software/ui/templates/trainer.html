@@ -1652,8 +1652,9 @@ let _clfCounts  = {};   // { label: count }
 let _clfThumbs  = {};   // { label: [dataUrl, …] } — persists across re-renders
 let _clfColors  = ['#6366f1','#f59e0b','#10b981','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6'];
 let _clfActive  = null; // which label file-picker is targeting
-let _txtItems   = [];
-let _imgThumbs  = [];
+let _txtItems      = [];
+let _imgThumbs     = [];
+let _loadedModelId = null;  // ID of brain loaded from Library — used to overwrite on re-save
 
 const _EMOJI_TYPE = {
   image_generator: '🎨', text_generator: '✍️',
@@ -2029,6 +2030,7 @@ function startOver() {
   _setupStage = 1;
   _txtItems = [];
   _imgThumbs = [];
+  _loadedModelId = null;
   ['image','text','clf-image','clf-text'].forEach(m =>
     document.getElementById('mode-' + m)?.classList.remove('selected'));
   document.getElementById('getStartedBtn').disabled = true;
@@ -2394,6 +2396,7 @@ async function clearData() {
   _nData = 0; _updateCountBadge();
   _txtItems = [];
   _imgThumbs = [];
+  _loadedModelId = null;
   _renderImgThumbs();
   _renderTxtList();
   if (_mode === 'classifier') {
@@ -3441,6 +3444,7 @@ async function saveBrainToLibrary() {
                         ? (LR_MAP_FINETUNE[_chips.lr] || 5e-5)
                         : (LR_MAP[_chips.lr] || 0.001),
     duration_seconds: _trainTimeMs ? Math.round(_trainTimeMs / 1000) : null,
+    existing_id:      _loadedModelId,
   };
   if (_mode === 'image') {
     payload.batch_size     = parseInt(_chips.batch || '8');
@@ -3457,7 +3461,7 @@ async function saveBrainToLibrary() {
 
   if (status) status.classList.remove('hidden', 'ok', 'err');
   if (data.ok) {
-    // Show success state
+    _loadedModelId = (data.entry || {}).id || _loadedModelId;
     document.getElementById('saveBrainForm')?.classList.add('hidden');
     document.getElementById('saveBrainSuccess')?.classList.remove('hidden');
   } else {
@@ -3502,6 +3506,7 @@ async function saveModel() {
                         ? (LR_MAP_FINETUNE[_chips.lr] || 5e-5)
                         : (LR_MAP[_chips.lr] || 0.001),
     duration_seconds: _trainTimeMs ? Math.round(_trainTimeMs / 1000) : null,
+    existing_id:      _loadedModelId,
   };
   if (_mode === 'image') {
     payload.batch_size     = parseInt(_chips.batch || '8');
@@ -3518,6 +3523,7 @@ async function saveModel() {
 
   status.classList.remove('hidden', 'ok', 'err');
   if (data.ok) {
+    _loadedModelId = (data.entry || {}).id || _loadedModelId;
     status.textContent = '✓ Saved to library!';
     status.classList.add('ok');
     if (nameIn) nameIn.value = '';
@@ -3536,15 +3542,19 @@ async function loadModel(modelId) {
   if (!data.ok) { alert('Load failed: ' + data.error); return; }
   _mode             = data.mode;
   _textTrainingMode = data.training_mode || 'scratch';
+  _loadedModelId    = (data.entry || {}).id || null;
   _trained = true;
   _applyMode();
   fetch('/api/info').then(r => r.json()).then(d => {
     _nParams    = d.n_params || 0;
     _finalLoss  = d.loss ?? null;
     _nData      = d.count  || 0;
-    // Restore embedding viz for smart_prompt models
     if (_textTrainingMode === 'smart_prompt' && d.viz_2d && d.viz_2d.length > 0) {
       _smartVizData = d.viz_2d;
+    }
+    if (d.texts && d.texts.length > 0) {
+      _txtItems = d.texts;
+      _renderTxtList();
     }
     _updateCountBadge();
     _syncSetupFlow();
@@ -3755,9 +3765,9 @@ async function loadLibModel(id) {
   _mode             = data.mode;
   _textTrainingMode = data.training_mode || 'scratch';
   _inputMode        = data.input_mode    || 'image';
+  _loadedModelId    = (data.entry || {}).id || null;
   if (_mode === 'classifier') {
     _clfTrainingMode = data.training_mode || 'finetune';
-    // Restore label list from the saved metadata
     const meta = data.entry || {};
     _clfLabels  = meta.labels || [];
     _clfCounts  = Object.fromEntries(_clfLabels.map(l => [l, 0]));
@@ -3770,6 +3780,10 @@ async function loadLibModel(id) {
     _finalLoss = d.loss ?? null;
     _nData     = d.count  || 0;
     if (_textTrainingMode === 'smart_prompt' && d.viz_2d?.length) _smartVizData = d.viz_2d;
+    if (d.texts && d.texts.length > 0) {
+      _txtItems = d.texts;
+      _renderTxtList();
+    }
     _updateCountBadge();
     _syncSetupFlow();
   });

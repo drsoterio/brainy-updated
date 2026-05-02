@@ -314,7 +314,11 @@ def save_model():
     model_type = _TYPE_MAP.get(state['mode'], state['mode'])
     emoji      = (data.get('emoji') or '').strip() or _EMOJI_MAP.get(model_type, '🤖')
 
-    model_id      = str(uuid.uuid4())
+    existing_id = (data.get('existing_id') or '').strip()
+    if existing_id and (_model_dir(existing_id) / 'metadata.json').exists():
+        model_id = existing_id
+    else:
+        model_id = str(uuid.uuid4())
     mdir          = _model_dir(model_id)
     mdir.mkdir(parents=True, exist_ok=True)
     weights_sub   = getattr(state['trainer'], 'WEIGHTS_SUBPATH', 'weights.pt')
