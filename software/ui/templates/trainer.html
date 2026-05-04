@@ -181,6 +181,7 @@
 
     /* Mode cards */
     .mode-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; max-width: 900px; width: 100%; margin: 0 auto 16px; }
+    .mode-cards.expo-two { grid-template-columns: repeat(2, 1fr); max-width: 520px; }
     @media (max-width: 860px) { .mode-cards { grid-template-columns: 1fr 1fr; max-width: 520px; } }
     .mode-card {
       border: 2px solid var(--border); border-radius: 18px; padding: 20px 16px;
@@ -584,9 +585,57 @@
     .lib-fc-rename { padding:8px 14px 10px; display:flex; gap:6px; flex-shrink:0; }
     .btn-danger { background:none; color:#dc2626; border:1.5px solid #fca5a5; border-radius:14px; }
     .btn-danger:hover:not(:disabled) { background:#fef2f2; border-color:#dc2626; opacity:1; transform:translateY(-1px); }
-    .emoji-popup  { position:fixed; background:var(--card); border:1.5px solid var(--border); border-radius:14px; padding:8px; display:grid; grid-template-columns:repeat(10,1fr); gap:2px; z-index:300; box-shadow:0 8px 28px rgba(0,0,0,.18); max-height:360px; overflow-y:auto; width:340px; }
-    .emoji-pop-btn { font-size:1.2rem; padding:5px; border:none; background:none; cursor:pointer; border-radius:7px; transition:background .1s; line-height:1; }
+    .emoji-popup  { position:fixed; background:var(--card); border:1.5px solid var(--border); border-radius:14px; padding:8px; display:flex; flex-direction:column; z-index:300; box-shadow:0 8px 28px rgba(0,0,0,.18); width:360px; max-height:440px; }
+    .emoji-search { width:100%; box-sizing:border-box; padding:5px 10px; border:1.5px solid var(--border); border-radius:8px; font-size:.85rem; background:var(--bg); color:var(--text); margin-bottom:6px; outline:none; flex-shrink:0; }
+    .emoji-search:focus { border-color:var(--primary); }
+    .emoji-inner  { overflow-y:auto; flex:1; }
+    .emoji-cat-label { font-size:.6rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:5px 2px 2px; }
+    .emoji-grid-row { display:grid; grid-template-columns:repeat(10,1fr); gap:1px; }
+    .emoji-pop-btn { font-size:1.2rem; padding:4px; border:none; background:none; cursor:pointer; border-radius:6px; transition:background .1s; line-height:1; }
     .emoji-pop-btn:hover { background:var(--primary-sel); }
+
+    /* ── Learn overlay ─────────────────────────────────────── */
+    #learnOverlay { position:fixed; inset:0; background:var(--card-bg); z-index:20; display:flex; flex-direction:column; overflow:hidden; }
+    .learn-body   { flex:1; overflow-y:auto; padding:24px 28px; max-width:960px; width:100%; margin:0 auto; }
+    .learn-grid   { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:20px; }
+    @media (max-width:740px) { .learn-grid { grid-template-columns:1fr; } }
+    .lesson-card  { background:var(--card); border:2px solid var(--border); border-radius:18px; padding:20px; display:flex; flex-direction:column; gap:10px; cursor:pointer; transition:border-color .15s, box-shadow .15s; }
+    .lesson-card:hover { border-color:var(--primary-mid); box-shadow:0 4px 20px var(--primary-sel); }
+    .lesson-card-icon  { font-size:2.6rem; line-height:1; }
+    .lesson-card-meta  { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .lesson-tag   { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; background:var(--primary-sel); color:var(--primary-dark); border-radius:999px; padding:2px 9px; }
+    .lesson-time  { font-size:.75rem; color:var(--muted); }
+    .lesson-card h3 { font-size:1.1rem; font-weight:800; color:var(--text); margin:0; }
+    .lesson-card-proj { font-size:.85rem; font-weight:700; color:var(--primary-dark); }
+    .lesson-card-desc { font-size:.84rem; color:var(--muted); line-height:1.5; flex:1; }
+    .lesson-start-btn { align-self:flex-start; margin-top:4px; }
+    /* Lesson page */
+    .lesson-page  { display:none; flex-direction:column; gap:28px; }
+    .lesson-page.active { display:flex; }
+    .lesson-hero  { background:var(--primary-lite); border-radius:18px; padding:28px 28px 22px; display:flex; gap:20px; align-items:flex-start; }
+    .lesson-hero-icon { font-size:4rem; flex-shrink:0; line-height:1; }
+    .lesson-hero h2   { font-size:1.5rem; font-weight:900; color:var(--primary-dark); margin:0 0 6px; }
+    .lesson-hero p    { font-size:.95rem; color:var(--text); line-height:1.6; margin:0; }
+    .lesson-section   { display:flex; flex-direction:column; gap:10px; }
+    .lesson-section h3 { font-size:1rem; font-weight:800; color:var(--text); margin:0; padding-bottom:6px; border-bottom:1.5px solid var(--border); }
+    .lesson-section p, .lesson-section li { font-size:.88rem; color:var(--text); line-height:1.65; }
+    .lesson-section ul, .lesson-section ol { padding-left:20px; margin:0; display:flex; flex-direction:column; gap:5px; }
+    .lesson-video { background:#0d0a1a; border-radius:14px; aspect-ratio:16/9; max-width:65%; position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; border:2px solid var(--border); }
+    .lesson-video-play { font-size:3.5rem; opacity:.5; cursor:pointer; }
+    .lesson-video figcaption { position:absolute; bottom:10px; left:0; right:0; text-align:center; font-size:.76rem; color:#94a3b8; }
+    .param-table  { width:100%; border-collapse:collapse; font-size:.82rem; }
+    .param-table th { background:var(--primary-sel); color:var(--primary-dark); font-weight:700; padding:7px 10px; text-align:left; border:1px solid var(--border); }
+    .param-table td { padding:7px 10px; border:1px solid var(--border); color:var(--text); vertical-align:top; line-height:1.5; }
+    .param-table tr:nth-child(even) td { background:var(--primary-lite); }
+    .try-next-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+    @media (max-width:600px) { .try-next-cards { grid-template-columns:1fr; } }
+    .try-next-card { background:var(--card); border:1.5px solid var(--border); border-radius:12px; padding:14px; font-size:.84rem; color:var(--muted); line-height:1.55; }
+    .try-next-card strong { display:block; color:var(--text); margin-bottom:4px; font-size:.88rem; }
+    .lesson-launch { background:var(--primary-lite); border-radius:14px; padding:20px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:10px; }
+    .lesson-step-block { background:var(--card); border:1.5px solid var(--border); border-radius:12px; padding:14px 16px; display:flex; gap:12px; align-items:flex-start; }
+    .lesson-step-num { background:var(--primary); color:white; border-radius:999px; width:24px; height:24px; display:flex; align-items:center; justify-content:center; font-size:.8rem; font-weight:800; flex-shrink:0; margin-top:1px; }
+    .lesson-step-block p { margin:4px 0 0; font-size:.84rem; color:var(--muted); line-height:1.55; }
+    .lesson-step-block strong { font-size:.9rem; color:var(--text); }
 
     /* ── Classifier input-mode sub-picker (home page) ──────────────────────── */
     .clf-input-picker { display:flex; gap:8px; justify-content:center; margin-bottom:24px; }
@@ -793,8 +842,12 @@
       </button>
     </div>
 
-    <!-- C) Utility zone — Library + theme dots -->
+    <!-- C) Utility zone — Learn + Library + theme dots -->
     <div class="utility-zone">
+      <button class="btn btn-secondary btn-sm util-lib-btn"
+              onclick="openLearn()" title="Lessons &amp; mini-projects" aria-label="Open Learn">
+        🎓 <span>Learn</span>
+      </button>
       <button class="btn btn-secondary btn-sm util-lib-btn"
               onclick="openLibrary()" title="Saved models &amp; bots" aria-label="Open Library">
         📚 <span>Library</span>
@@ -845,7 +898,8 @@
         <div class="home-tagline">Your ideas, your bot, your AI.</div>
 
         <!-- Mode selector — four direct cards -->
-        <div class="mode-cards">
+        <!-- EXPO_HIDE_CLASSIFIERS applied below: classList toggled by JS on page load -->
+        <div class="mode-cards" id="modeCards">
           <div class="mode-card" id="mode-image" onclick="selectCard('image')">
             <div class="mode-card-check">✓</div>
             <div class="mode-card-icon">🎨</div>
@@ -858,6 +912,7 @@
             <div class="mode-card-name">Text Generator</div>
             <div class="mode-card-desc">Write new text in the style of your examples</div>
           </div>
+          <!-- HIDDEN FOR EXPO — re-enable by setting EXPO_HIDE_CLASSIFIERS = false -->
           <div class="mode-card" id="mode-clf-image" onclick="selectCard('clf-image')">
             <div class="mode-card-check">✓</div>
             <div class="mode-card-icon">🏷️🖼️</div>
@@ -1922,6 +1977,364 @@
     </div>
   </div><!-- /statsSidebar -->
 
+  <!-- ── Full-page Learn overlay ───────────────────────────── -->
+  <div id="learnOverlay" class="hidden">
+    <div class="lib-ov-bar">
+      <a class="brand-link" onclick="closeLearn();goTo(0);" style="cursor:pointer;text-decoration:none;margin-right:4px;" title="Go to Home">
+        <svg viewBox="20 25 160 145" width="26" height="26" style="flex-shrink:0;display:block;overflow:visible;" aria-hidden="true">
+          <path class="mascot-mini-path" d="M 100 30 C 122 22 150 30 164 52 C 178 74 174 102 162 120 C 150 138 132 152 108 158 C 84 164 58 158 42 142 C 26 126 24 100 30 76 C 36 52 58 36 100 30 Z" fill="oklch(80% 0.12 283)" style="transition:fill 0.6s ease"/>
+        </svg>
+        <span class="brand-logo">br<span class="brand-a">a</span><span class="brand-i">i</span>ny</span>
+      </a>
+      <button class="btn btn-secondary btn-sm" onclick="closeLearn()">← Back</button>
+      <span class="lib-ov-title">📚 Learn</span>
+    </div>
+
+    <div class="learn-body">
+
+      <!-- ── Lesson grid (default view) ── -->
+      <div id="learnGrid">
+        <div style="margin-bottom:6px;">
+          <div style="font-size:1.3rem;font-weight:900;color:var(--text);">Pick a project. Build a real AI bot.</div>
+          <div style="font-size:.9rem;color:var(--muted);margin-top:4px;">Understand what's happening under the hood.</div>
+        </div>
+        <div class="learn-grid">
+
+          <!-- Card 1 — Dream Machine -->
+          <div class="lesson-card" onclick="_openLesson(1)">
+            <div class="lesson-card-icon">☁️</div>
+            <div class="lesson-card-meta">
+              <span class="lesson-tag">Image Generator · VAE</span>
+              <span class="lesson-time">~30 min hands-on</span>
+            </div>
+            <h3>Dream Machine</h3>
+            <div class="lesson-card-desc">Train a model on photos from your world — your school, your plants, your bedroom — then watch it dream up new ones.</div>
+            <button class="btn btn-primary btn-sm lesson-start-btn" onclick="event.stopPropagation();_openLesson(1)">Start lesson →</button>
+          </div>
+
+          <!-- Card 2 — Misfortune Teller -->
+          <div class="lesson-card" onclick="_openLesson(2)">
+            <div class="lesson-card-icon">🔮</div>
+            <div class="lesson-card-meta">
+              <span class="lesson-tag">Text Generator · LSTM</span>
+              <span class="lesson-time">~30 min hands-on</span>
+            </div>
+            <h3>Misfortune Teller</h3>
+            <div class="lesson-card-desc">Train a tiny language model on your own collection of small dreads, then let it generate new ones.</div>
+            <button class="btn btn-primary btn-sm lesson-start-btn" onclick="event.stopPropagation();_openLesson(2)">Start lesson →</button>
+          </div>
+
+          <!-- Card 3 — Screenplay Writer -->
+          <div class="lesson-card" onclick="_openLesson(3)">
+            <div class="lesson-card-icon">✍️</div>
+            <div class="lesson-card-meta">
+              <span class="lesson-tag">Text Generator · Smart Prompt</span>
+              <span class="lesson-time">~30 min hands-on</span>
+            </div>
+            <h3>Screenplay Writer</h3>
+            <div class="lesson-card-desc">Mix lines from movies, plays, and books you love — and let the bot write new stories in that mashup style.</div>
+            <button class="btn btn-primary btn-sm lesson-start-btn" onclick="event.stopPropagation();_openLesson(3)">Start lesson →</button>
+          </div>
+
+        </div><!-- /learn-grid -->
+      </div><!-- /learnGrid -->
+
+      <!-- ══════════════════════════════════════════════════ -->
+      <!-- LESSON 1 — Dream Machine (VAE)                    -->
+      <!-- ══════════════════════════════════════════════════ -->
+      <div id="learnLesson1" class="lesson-page">
+        <button class="btn btn-secondary btn-sm" style="align-self:flex-start;" onclick="_closeLesson()">← Back to lessons</button>
+
+        <div class="lesson-hero">
+          <div class="lesson-hero-icon">☁️</div>
+          <div>
+            <div style="font-size:.8rem;font-weight:700;color:var(--primary-dark);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Lesson 1 · Image Generator · VAE</div>
+            <h2>Dream Machine</h2>
+            <p>Train a model on photos from your world — your school, your plants, your bedroom — then watch it dream up new images it has never seen before.</p>
+          </div>
+        </div>
+
+        <figure class="lesson-video">
+          <div class="lesson-video-play">▶</div>
+          <figcaption>Watch the lesson (5–7 min)</figcaption>
+        </figure>
+
+        <div class="lesson-section">
+          <h3>What you'll learn</h3>
+          <ul>
+            <li>What <strong>generative models</strong> do — and how they differ from classifiers</li>
+            <li>What a <strong>latent space</strong> is: the model's internal "imagination map"</li>
+            <li>What <strong>reconstruction loss</strong> is — how the model measures its own output quality</li>
+            <li>Why generated images get blurry with small datasets — and what that tells you about scale</li>
+            <li>What <strong>mode collapse</strong> is, and why it happens with tiny training sets</li>
+            <li>Why brainy has no "pre-trained" option for image generation — and what training Stable Diffusion actually cost</li>
+          </ul>
+        </div>
+
+        <div class="lesson-section">
+          <h3>The project</h3>
+          <p>You'll upload 10–30 photos of something personally meaningful — your school courtyard, your houseplants, your face, your cat. Then you'll train a <strong>Variational Autoencoder (VAE)</strong>: a generative model that learns to compress each image into a small vector of numbers (the <strong>latent space</strong>), then reconstruct it back. Once trained, it can generate <em>new</em> images by sampling from that space — images it has never actually seen.</p>
+          <p>Here's the constructionist insight wired into this project: <em>the results will probably be blurry.</em> That's not a failure — it's data. Stable Diffusion trained on 2.3 billion images for 90 days on 4,000 GPUs. You trained on 20 photos for 3 minutes on a laptop. The blurriness is the model showing you, visually, how much it doesn't know. That's <strong>reconstruction loss made visible</strong>.</p>
+          <div style="background:var(--primary-lite);border-radius:10px;padding:12px 16px;font-size:.84rem;color:var(--muted);margin-top:4px;">[lesson preview: live training canvas showing blurry-to-less-blurry progression across epochs]</div>
+        </div>
+
+        <div class="lesson-section">
+          <h3>Step-by-step walkthrough</h3>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="lesson-step-block">
+              <div class="lesson-step-num">1</div>
+              <div><strong>Gather your photos</strong><p>Take 20–30 photos of your subject. Vary the angle, lighting, and distance. All images are resized to 96×96 internally — tight, centred crops work better than wide shots with complex backgrounds.</p></div>
+            </div>
+            <div class="lesson-step-block">
+              <div class="lesson-step-num">2</div>
+              <div><strong>Open Image Generator mode</strong><p>On the brainy home screen, select <strong>Image Generator</strong>. Upload your photos. Brainy accepts JPG, PNG, or webcam captures. The data step is complete when you can see thumbnails of all your images.</p></div>
+            </div>
+            <div class="lesson-step-block">
+              <div class="lesson-step-num">3</div>
+              <div><strong>Tune parameters</strong><p>Start with <strong>Epochs = 60</strong>, <strong>Latent Dimension = 128</strong>, <strong>Augmentation = 50×</strong>, <strong>Batch Size = 8</strong>. Augmentation is especially important here — it synthetically triples your dataset by flipping, rotating, and adjusting each image, which helps prevent the model from memorising rather than learning.</p></div>
+            </div>
+            <div class="lesson-step-block">
+              <div class="lesson-step-num">4</div>
+              <div><strong>Train and observe</strong><p>Watch the live preview. Epoch 1: blobs. Epoch 20: rough shapes. Epoch 60: recognisable features, still soft. If every generated image looks the same (mode collapse), you need more variety in your training photos or a lower latent dimension.</p></div>
+            </div>
+            <div class="lesson-step-block">
+              <div class="lesson-step-num">5</div>
+              <div><strong>Generate and reflect</strong><p>In the Test tab, generate 20+ samples. Compare variety vs sharpness across different parameter runs. The "Your Model vs Big AI" panel shows exactly how your training compares to Stable Diffusion on compute, data, and time.</p></div>
+            </div>
+            <div class="lesson-step-block">
+              <div class="lesson-step-num">6</div>
+              <div><strong>Deploy</strong><p>Save and deploy to the Pi. A button press generates a new dream. Connect a small screen or thermal image printer — the Pi becomes an art installation that endlessly hallucinates variations of your world.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lesson-section">
+          <h3>Parameters deep-dive</h3>
+          <table class="param-table">
+            <thead><tr><th>Parameter</th><th>What it controls</th><th>Effect on the VAE</th><th>Starting value</th><th>Too high / too low</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Epochs</strong></td><td>Full passes through training data</td><td>More = sharper output up to a point; past the plateau you're overfitting</td><td>60</td><td>Too high: model reproduces training photos exactly. Too low: blurry blobs with no recognisable structure.</td></tr>
+              <tr><td><strong>Latent dimension</strong></td><td>Size of the internal imagination vector</td><td>Larger = richer encoding, more varied outputs — but needs more photos to fill effectively</td><td>128 (20–30 photos); 256 (30+ photos)</td><td>Too large with too few images: latent space is mostly empty, outputs collapse to blurs. Too small: loses fine detail.</td></tr>
+              <tr><td><strong>Data augmentation</strong></td><td>Synthetic variants per image per epoch</td><td>Flips, rotations, brightness jitter — multiplies effective dataset size; capped at 8× per epoch internally</td><td>50×</td><td>Too low (&lt;20 photos): model memorises and regenerates exact training images. Augmentation is free regularisation.</td></tr>
+              <tr><td><strong>Batch size</strong></td><td>Images processed before each weight update</td><td>Smaller batches = noisier but more frequent updates; good for tiny datasets</td><td>8</td><td>Too large: smoother gradient but can overfit faster on small data. Try 4 if training feels unstable.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="lesson-section">
+          <h3>Try this next</h3>
+          <div class="try-next-cards">
+            <div class="try-next-card"><strong>Compare latent sizes</strong>Run the same photos with latent dim 64, 128, and 256. How does the variety and sharpness of generated images change? Where's the sweet spot for your dataset?</div>
+            <div class="try-next-card"><strong>Deliberately trigger mode collapse</strong>Train on only 5 photos. Generate 20 samples — are they all similar? Now add 20 more and retrain. At what point does variety appear?</div>
+            <div class="try-next-card"><strong>Mix categories</strong>Train on photos of two different subjects (plants + clouds, faces + architecture). Does the VAE generate hybrids? Open the Test tab's PCA scatter to see how the latent space organised them.</div>
+          </div>
+        </div>
+
+        <div class="lesson-launch">
+          <div style="font-size:1.1rem;font-weight:800;color:var(--primary-dark);">Ready to build?</div>
+          <div style="font-size:.88rem;color:var(--muted);">Open brainy and start with the Image Generator mode.</div>
+          <button class="btn btn-primary" onclick="closeLearn();goTo(0);setTimeout(()=>{selectCard('image')},200)">Open brainy → Image Generator</button>
+        </div>
+      </div><!-- /lesson1 -->
+
+      <!-- ══════════════════════════════════════════════════ -->
+      <!-- LESSON 2 — Misfortune Teller (LSTM)               -->
+      <!-- ══════════════════════════════════════════════════ -->
+      <div id="learnLesson2" class="lesson-page">
+        <button class="btn btn-secondary btn-sm" style="align-self:flex-start;" onclick="_closeLesson()">← Back to lessons</button>
+
+        <div class="lesson-hero">
+          <div class="lesson-hero-icon">🔮</div>
+          <div>
+            <div style="font-size:.8rem;font-weight:700;color:var(--primary-dark);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Lesson 2 · Text Generator · LSTM (from scratch)</div>
+            <h2>Misfortune Teller</h2>
+            <p>Train a tiny language model on your own collection of small dreads — then let it generate new ones. This is your first sequence model: the same core idea that powers predictive text on your phone.</p>
+          </div>
+        </div>
+
+        <figure class="lesson-video">
+          <div class="lesson-video-play">▶</div>
+          <figcaption>Watch the lesson (5–7 min)</figcaption>
+        </figure>
+
+        <div class="lesson-section">
+          <h3>What you'll learn</h3>
+          <ul>
+            <li>What a <strong>sequence model</strong> is — predicting the next token, one step at a time</li>
+            <li>How text becomes numbers: <strong>vocabulary, tokens, and embeddings</strong></li>
+            <li>What <strong>epochs, learning rate, and window size</strong> each do for an LSTM</li>
+            <li>Why small datasets produce repetitive output — and the two ways to fix it</li>
+            <li>How to wire a trained model to a thermal printer or speaker on a Pi</li>
+          </ul>
+        </div>
+
+        <div class="lesson-section">
+          <h3>The project</h3>
+          <p>A <strong>misfortune teller</strong> is a text generator trained on a list of small, specific dreads — the kind that feel darkly funny when written down. "You will laugh before you realise the story was serious." "You will find the perfect word fifteen minutes after the conversation ends." Write 50–100 of them, each one sentence, train the model, and it will generate new ones in your exact style.</p>
+          <p>This project works because the training data is <em>yours</em>: personal, specific, and short. LSTM models trained on small datasets learn to recombine and mutate what they've seen. That tends to produce output that feels slightly unhinged in a good way — the model becomes a strange echo of your own internal monologue.</p>
+          <p>Final step: hook it to a thermal printer or speaker on your Pi. Press a button, get a misfortune. Give it to a friend. Watch their face.</p>
+          <div style="background:var(--primary-lite);border-radius:10px;padding:12px 16px;font-size:.84rem;color:var(--muted);margin-top:4px;">[lesson preview: brainy text training UI with loss curve and sample output appearing over time]</div>
+        </div>
+
+        <div class="lesson-section">
+          <h3>Step-by-step walkthrough</h3>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="lesson-step-block">
+              <div class="lesson-step-num">1</div>
+              <div><strong>Write your misfortunes</strong><p>Aim for 50–100 sentences, each one line. Start with "You will…" or a variation. Be specific — "you will lose your charger" is worse than "you will find your charger behind the radiator, three days after you bought a replacement." Specificity is what gives the model something to learn.</p></div>
+            </div>
+            <div class="lesson-step-block">
+              <div class="lesson-step-num">2</div>
+              <div><strong>Choose Text → Scratch (LSTM)</strong><p>On the brainy home screen, select <strong>Text Generator</strong>. On the next screen, choose <strong>From scratch</strong>. This trains a compact LSTM directly on your examples — no pre-existing model knowledge, no borrowed weights. Just your sentences.</p></div>
+            </div>
+            <div class="lesson-step-block">
+              <div class="lesson-step-num">3</div>
+              <div><strong>Tune parameters</strong><p>Paste in your sentences one by one. Set <strong>Epochs = 80–100</strong> (small datasets need more passes), <strong>Learning Rate = Steady</strong>, <strong>Window Size = 30–40</strong> tokens. Hit Train.</p></div>
+            </div>
+            <div class="lesson-step-block">
+              <div class="lesson-step-num">4</div>
+              <div><strong>Watch the loss curve</strong><p>Loss should drop steeply in the first 20 epochs, then gradually level off. Sample output at each checkpoint starts as gibberish, becomes partially grammatical, then develops your voice. If it never becomes coherent after 80 epochs: add more examples or shorten the window size.</p></div>
+            </div>
+            <div class="lesson-step-block">
+              <div class="lesson-step-num">5</div>
+              <div><strong>Test with seed phrases</strong><p>In the Test tab, enter "You will" as a seed and generate. Try <strong>temperature</strong> low (0.4) for predictable output, high (1.0+) for chaotic mutations. The sweet spot is usually 0.7–0.9 — coherent but surprising.</p></div>
+            </div>
+            <div class="lesson-step-block">
+              <div class="lesson-step-num">6</div>
+              <div><strong>Deploy</strong><p>Save your model. Deploy to Pi. Wire a button to trigger generation, a thermal printer or text-to-speech to output it. The Pi becomes a pocket oracle that dispenses your anxieties back at you, mutated.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lesson-section">
+          <h3>Parameters deep-dive</h3>
+          <table class="param-table">
+            <thead><tr><th>Parameter</th><th>What it controls</th><th>Effect on the LSTM</th><th>Starting value</th><th>Too high / too low</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Epochs</strong></td><td>Full passes through your training sentences</td><td>More passes = model learns longer-range patterns in your writing style; eventually memorises rather than generalises</td><td>80–100</td><td>Too high: model recites your exact sentences. Too low: gibberish that never finds your voice.</td></tr>
+              <tr><td><strong>Learning rate</strong></td><td>Step size in <strong>gradient descent</strong> — how much each weight update shifts</td><td>Steady (0.001) is reliable for most text sizes; Fast converges quicker but overshoots on short corpora</td><td>Steady</td><td>Too fast: loss bounces up and down without converging. Too careful: needs 3× more epochs for the same result.</td></tr>
+              <tr><td><strong>Window size</strong></td><td>Number of <strong>tokens</strong> (subword units) seen per training step</td><td>Longer window = model learns sentence-level structure; ~40 tokens ≈ one full misfortune sentence</td><td>30–40</td><td>Too large: slows training, may overfit very short texts. Too small: model loses sentence grammar, output becomes word salad.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="lesson-section">
+          <h3>Try this next</h3>
+          <div class="try-next-cards">
+            <div class="try-next-card"><strong>Scale up</strong>Add 50 more sentences and retrain. Does the output get more varied? At what dataset size does repetition disappear? You're running a real scaling experiment.</div>
+            <div class="try-next-card"><strong>Change the genre</strong>The LSTM learns whatever register you give it. Train on horoscopes, apologies, compliments, or sports commentary. Watch how quickly it shifts voice. What stays the same?</div>
+            <div class="try-next-card"><strong>Compare to Lesson 3</strong>Both lessons produce a text bot — but this one trains from scratch, Lesson 3 uses a pre-trained model. Try building the same misfortune teller both ways. What's the output quality difference? What's the data requirement difference?</div>
+          </div>
+        </div>
+
+        <div class="lesson-launch">
+          <div style="font-size:1.1rem;font-weight:800;color:var(--primary-dark);">Ready to build?</div>
+          <div style="font-size:.88rem;color:var(--muted);">Open brainy and choose Text Generator → From scratch.</div>
+          <button class="btn btn-primary" onclick="closeLearn();goTo(0);setTimeout(()=>{selectCard('text')},200)">Open brainy → Text Generator</button>
+        </div>
+      </div><!-- /lesson2 -->
+
+      <!-- ══════════════════════════════════════════════════ -->
+      <!-- LESSON 3 — Screenplay Writer (Smart Prompt / RAG) -->
+      <!-- ══════════════════════════════════════════════════ -->
+      <div id="learnLesson3" class="lesson-page">
+        <button class="btn btn-secondary btn-sm" style="align-self:flex-start;" onclick="_closeLesson()">← Back to lessons</button>
+
+        <div class="lesson-hero">
+          <div class="lesson-hero-icon">✍️</div>
+          <div>
+            <div style="font-size:.8rem;font-weight:700;color:var(--primary-dark);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Lesson 3 · Text Generator · Smart Prompt (pre-trained)</div>
+            <h2>Screenplay Writer</h2>
+            <p>Mix lines from movies, plays, and books you love — and let the bot write new stories in that mashup style. Same category as Lesson 2 (text generation), completely different method.</p>
+          </div>
+        </div>
+
+        <figure class="lesson-video">
+          <div class="lesson-video-play">▶</div>
+          <figcaption>Watch the lesson (5–7 min)</figcaption>
+        </figure>
+
+        <div class="lesson-section">
+          <h3>What you'll learn</h3>
+          <ul>
+            <li>What <strong>RAG (Retrieval-Augmented Generation)</strong> is — and why it's not the same as training from scratch</li>
+            <li>Why <strong>pre-trained models</strong> exist, and when to use them vs train from zero</li>
+            <li>What <strong>embeddings</strong> are — how text gets turned into meaning vectors so similar ideas cluster together</li>
+            <li>Why this method uses <strong>no epochs, no gradient descent</strong>, and no loss curve</li>
+            <li>How <strong>prompt engineering</strong> and example curation shape what the model outputs — two levers that replace hyperparameter tuning</li>
+          </ul>
+        </div>
+
+        <div class="lesson-section">
+          <h3>The project</h3>
+          <p>You'll curate 30–50 lines or short passages from stories you love — Shrek and Hamlet and a Studio Ghibli film, if that's your mix, or anything else. Then you tell the bot to write new scenes using that mashup as its voice. Ask it: "write a scene where the dragon meets the prince." Watch what it does.</p>
+          <p>Under the hood, brainy converts each of your examples into an <strong>embedding</strong>: a list of ~384 numbers that mathematically encodes its meaning. When you send a prompt, brainy finds the 3–5 examples that are semantically closest to it and injects them into the context sent to the language model (LLaMA 3.2 via Ollama). The model generates a response that's grounded in <em>your</em> examples, not just its training data.</p>
+          <p>This is <strong>Retrieval-Augmented Generation</strong>. Nothing is trained. No weights change. The magic is entirely in your curation — which examples you choose, how specifically you describe the style, how many you provide. The bot is only as interesting as the library you give it.</p>
+          <div style="background:var(--primary-lite);border-radius:10px;padding:12px 16px;font-size:.84rem;color:var(--muted);margin-top:4px;">[lesson preview: brainy chat interface with style examples visible in the sidebar]</div>
+        </div>
+
+        <div class="lesson-section">
+          <h3>Step-by-step walkthrough</h3>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="lesson-step-block">
+              <div class="lesson-step-num">1</div>
+              <div><strong>Choose your blend</strong><p>Pick 2–4 source styles you want to mix. They should be different enough to be interesting together: a 16th century play and a 2001 DreamWorks film, for instance. The contrast is what makes the output surprising.</p></div>
+            </div>
+            <div class="lesson-step-block">
+              <div class="lesson-step-num">2</div>
+              <div><strong>Curate your examples</strong><p>Write or copy 30–50 short passages in those voices — lines of dialogue, short monologues, scene descriptions. Each is one brainy entry. Variety of topic matters: love, fear, food, battle, small talk. The retrieval works better when it has coverage.</p></div>
+            </div>
+            <div class="lesson-step-block">
+              <div class="lesson-step-num">3</div>
+              <div><strong>Choose Text → Smart Prompt</strong><p>Select <strong>Text Generator → Smart Prompt</strong> on the brainy home screen. Paste your examples. Write a system prompt that describes the style blend: "You write in the combined voice of Shakespeare and Shrek. Formal sentence structure, but crude vocabulary. Every speech is secretly about honour."</p></div>
+            </div>
+            <div class="lesson-step-block">
+              <div class="lesson-step-num">4</div>
+              <div><strong>Prepare (no training)</strong><p>Hit <strong>Prepare My Bot</strong>. Brainy embeds your examples — this takes 10–30 seconds. There is no loss curve, no epochs, no gradient descent. The moment the embeddings are ready, your bot exists. This is the key difference from Lessons 1 and 2.</p></div>
+            </div>
+            <div class="lesson-step-block">
+              <div class="lesson-step-num">5</div>
+              <div><strong>Write scenes</strong><p>In the Test tab, send prompts like "write a scene where two characters argue about bread" or "write an opening monologue for a villain who is also very polite." Watch whether the bot adopts your blend. If it sounds generic: sharpen the system prompt. If it ignores your examples: the examples may not be similar enough to your test queries — add more varied ones.</p></div>
+            </div>
+            <div class="lesson-step-block">
+              <div class="lesson-step-num">6</div>
+              <div><strong>Deploy</strong><p>Save and deploy to the Pi. Wire a keyboard or microphone for input and a screen or speaker for output. The Pi becomes a collaborative writing partner with the combined voice of every story you gave it.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lesson-section">
+          <h3>Parameters deep-dive</h3>
+          <table class="param-table">
+            <thead><tr><th>Concept</th><th>What it is</th><th>How to change it</th><th>Effect on output</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Examples (retrieval pool)</strong></td><td>The library of passages the bot can draw on</td><td>Add or remove entries in brainy</td><td>More examples = better topic coverage; fewer = bot goes off-style on unfamiliar prompts. 30–50 is a solid minimum.</td></tr>
+              <tr><td><strong>System prompt</strong></td><td>Instructions sent to the language model before every conversation</td><td>Text field in brainy setup</td><td>The single most powerful lever. Specific = good ("never use contractions, always speak in iambic pentameter"). Vague = bad ("be creative").</td></tr>
+              <tr><td><strong>Temperature</strong></td><td>Randomness of the language model's word choices</td><td>Slider in the Test tab</td><td>Low (0.3–0.5): predictable, stays on-voice. High (0.9–1.2): surprising and creative, but may drift off-character.</td></tr>
+              <tr><td><strong>Embeddings</strong></td><td>384-number meaning vectors (generated by all-MiniLM-L6-v2) for each example</td><td>Set automatically; improve by writing richer examples</td><td>Determines which examples get retrieved for each prompt. Richer examples = more accurate memory. Short or generic examples = poor retrieval.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="lesson-section">
+          <h3>Try this next</h3>
+          <div class="try-next-cards">
+            <div class="try-next-card"><strong>Compare to Lesson 2</strong>Build the Misfortune Teller using Smart Prompt instead of LSTM. Same 50 sentences, different method. Which output is more varied? Which one sounds more like you? What does that tell you about pre-trained vs from-scratch?</div>
+            <div class="try-next-card"><strong>Test retrieval failure</strong>Send prompts that are completely outside your example set — a topic no example covers. Does the bot stay in voice or revert to generic LLM? That boundary is where RAG breaks down.</div>
+            <div class="try-next-card"><strong>Rewrite your system prompt</strong>Keep the same 50 examples, but change the system prompt to something completely different. How much does the output change? You're testing how much of the voice lives in the examples vs the instructions.</div>
+          </div>
+        </div>
+
+        <div class="lesson-launch">
+          <div style="font-size:1.1rem;font-weight:800;color:var(--primary-dark);">Ready to build?</div>
+          <div style="font-size:.88rem;color:var(--muted);">Open brainy and choose Text Generator → Smart Prompt.</div>
+          <button class="btn btn-primary" onclick="closeLearn();goTo(0);setTimeout(()=>{selectCard('text');setTimeout(()=>{const b=document.getElementById('tmcard-smart');if(b)b.click();},200)},200)">Open brainy → Smart Prompt</button>
+        </div>
+      </div><!-- /lesson3 -->
+
+    </div><!-- /learn-body -->
+  </div><!-- /learnOverlay -->
+
   <!-- ── Full-page library overlay ─────────────────────────── -->
   <div id="libraryOverlay" class="lib-overlay hidden">
     <!-- Top bar -->
@@ -1995,6 +2408,9 @@
 
 <script>
 // ── State ──────────────────────────────────────────────────────────────────────
+// HIDDEN FOR EXPO — re-enable by setting EXPO_HIDE_CLASSIFIERS = false
+const EXPO_HIDE_CLASSIFIERS = true;
+
 let _mode    = null;   // 'image' | 'text' | 'classifier'
 let _cardMode = null;  // 'image' | 'text' | 'clf-image' | 'clf-text'
 let _step    = 0;
@@ -2059,6 +2475,30 @@ function goNext() { goTo(_step + 1); }
 function goBack() { goTo(_step - 1); }
 
 let _libActiveTab = 'brains';
+
+function openLearn() {
+  if (_step === 1 && _camStream) stopCam();
+  _closeLesson();
+  document.getElementById('learnOverlay').classList.remove('hidden');
+}
+
+function closeLearn() {
+  document.getElementById('learnOverlay').classList.add('hidden');
+}
+
+function _openLesson(n) {
+  document.getElementById('learnGrid').classList.add('hidden');
+  document.querySelectorAll('.lesson-page').forEach(p => p.classList.remove('active'));
+  const page = document.getElementById('learnLesson' + n);
+  if (page) { page.classList.add('active'); page.scrollIntoView({block:'start',behavior:'smooth'}); }
+  document.querySelector('.learn-body').scrollTop = 0;
+}
+
+function _closeLesson() {
+  document.querySelectorAll('.lesson-page').forEach(p => p.classList.remove('active'));
+  document.getElementById('learnGrid')?.classList.remove('hidden');
+  document.querySelector('.learn-body')?.scrollTo({top:0});
+}
 
 function openLibrary() {
   if (_step === 1 && _camStream) stopCam();
@@ -5386,46 +5826,59 @@ async function deleteLibModel(id) {
   }
 }
 
-function showEmojiPicker(id, el) {
-  const popup  = document.getElementById('emojiPopup');
-  const emojis = [
-    // magic & mystery
-    '🔮','🪄','✨','💫','🌟','⭐','🌠','☄️','🎱','👁️',
-    // tech & science
-    '🤖','🧠','💻','📱','📡','🔭','🔬','🧪','🧬','⚛️',
-    '⚙️','🔧','💡','🔋','📻','🎤','🔊','🎧','📷','🎥',
-    // music
-    '🎵','🎶','🎸','🎹','🎺','🎻','🥁','🎷','🪗','🪘',
-    // animals
-    '🐦','🦅','🦜','🦚','🦩','🐧','🦋','🐝','🐞','🕷️',
-    '🐕','🐈','🐰','🐻','🦊','🐺','🦁','🐯','🐘','🦒',
-    '🦓','🦏','🦛','🐊','🐢','🦎','🐸','🐙','🦑','🐬',
-    '🐳','🦈','🐟','🦀','🦞','🦔','🐿️','🦄','🐲','🦕',
-    // nature
-    '🌸','🌹','🌺','🌻','🌼','🍀','🌵','🌴','🌿','🍄',
-    '🍁','🌾','🌊','🏔️','⛰️','🌋','🌍','🌙','☀️','🌈',
-    '⚡','❄️','🔥','💧','☁️','🌤️','🌪️','🌊','🏝️','🌲',
-    // food
-    '🍕','🍔','🍣','🍜','🌮','🍩','🎂','🍫','🍓','🍇',
-    // objects & places
-    '📖','📚','🗺️','🏆','👑','💎','💍','🗝️','🔍','🪬',
-    '🎭','🎪','🏰','🗼','🚀','✈️','⛵','🚂','🏡','🎠',
-    // faces & people
-    '😊','😍','🤩','😎','👻','💀','👽','🧙','🦸','🧜',
-    // games & fun
-    '🎮','🎯','🎨','🎬','🎃','🎁','🎉','🎊','🪁','🎰',
-    // symbols
-    '❤️','🧡','💛','💚','💙','💜','⚽','🏀','🎱','⚔️',
-  ];
-  popup.innerHTML = emojis.map(e => `<button class="emoji-pop-btn" onclick="pickEmoji('${id}','${e}')">${e}</button>`).join('');
-  const rect = el.getBoundingClientRect();
+// ── Emoji picker (shared) ─────────────────────────────────────────────────────
+const _ALL_EMOJIS = {
+  'Smileys': ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','😉','😊','😇','🥰','😍','🤩','😘','😗','😚','😙','🥲','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','🥴','😵','🤯','🤠','🥳','🥸','😎','🤓','🧐','😕','😟','🙁','☹️','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','☠️','💩','🤡','👹','👺','👻','👽','👾','🤖'],
+  'People': ['👋','🤚','🖐️','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦵','🦶','👂','👃','👀','👁️','👅','👄','💋','🧠','🦷','🦴','👶','🧒','👦','👧','🧑','👱','👨','🧔','👩','🧓','👴','👵','🙍','🙎','🙅','🙆','💁','🙋','🧏','🙇','🤦','🤷','👮','🕵️','💂','👷','👸','🤴','🦸','🦹','🧙','🧝','🧛','🧟','🧜','🧚','👼','🤶','🎅'],
+  'Animals': ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🙈','🙉','🙊','🐒','🐔','🐧','🐦','🐤','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🦋','🐛','🐌','🐞','🐜','🕷️','🦂','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊','🐅','🐆','🦓','🦍','🐘','🦛','🦏','🐪','🐫','🦒','🦬','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🐕‍🦺','🐈','🐓','🦃','🦤','🦚','🦜','🦢','🦩','🕊️','🐇','🦝','🦨','🦡','🦫','🦦','🦥','🐁','🐀','🐿️','🦔','🐾','🐲','🐉'],
+  'Nature': ['🌱','🌲','🌳','🌴','🌵','🌾','🌿','☘️','🍀','🎍','🎋','🍃','🍂','🍁','🍄','💐','🌷','🌹','🥀','🌺','🌸','🌼','🌻','🌞','🌝','🌛','🌜','🌚','🌕','🌖','🌗','🌘','🌑','🌒','🌓','🌔','🌙','⭐','🌟','💫','✨','🌠','🌌','☀️','🌤️','⛅','🌥️','☁️','🌦️','🌧️','⛈️','🌩️','🌨️','❄️','☃️','⛄','🌬️','💨','🌀','🌈','🌊','💧','🔥','⚡','🌍','🌎','🌏','🏔️','⛰️','🌋','🏝️','🏞️'],
+  'Food': ['🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶️','🧄','🧅','🥔','🍠','🥐','🥯','🍞','🥖','🥨','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗','🍖','🌭','🍔','🍟','🍕','🥪','🥙','🧆','🌮','🌯','🥗','🥘','🥫','🍱','🍘','🍙','🍚','🍛','🍜','🍝','🍢','🍣','🍤','🍥','🥮','🍡','🥟','🥠','🥡','🍦','🍧','🍨','🍩','🍪','🎂','🍰','🧁','🥧','🍫','🍬','🍭','🍮','🍯','🍼','🥛','☕','🫖','🍵','🧃','🥤','🧋','🍶','🍾','🍷','🍸','🍹','🍺','🍻','🥂','🥃','🧊','🍽️','🍴','🥄','🥢'],
+  'Travel': ['🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','🚐','🚚','🚛','🚜','🏍️','🛵','🚲','🛴','🛹','⛽','🚨','🚥','🚦','🛑','🚧','⚓','⛵','🚤','🛥️','🚢','✈️','🛩️','🛫','🛬','🪂','💺','🚁','🚀','🛸','🪐','🗺️','🧭','🏕️','🏖️','🏜️','🏟️','🏛️','🏗️','🏘️','🏠','🏡','🏢','🏥','🏦','🏨','🏩','🏪','🏫','🏬','🏭','🏯','🏰','💒','🗼','🗽','⛪','🕌','⛩️','🕋','⛲','🌁','🌃','🏙️','🌄','🌅','🌆','🌇','🌉','🎠','🎡','🎢','🎪'],
+  'Activities': ['⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🏓','🏸','🏒','🏑','🥍','🏏','🥅','⛳','🎣','🤿','🥊','🥋','🎽','🛷','🛹','🎯','🎮','🕹️','🎲','♟️','🧩','🪀','🎭','🎨','🖼️','🎤','🎧','🎼','🥁','🪘','🎸','🎹','🎺','🎻','🪕','🎬','🎞️','📽️','🎦','📺','📻','🏋️','🤼','🤸','🏊','🚵','🏇','🏂','🤾','🏌️','🏄','🚣','🧘','🧗','🤺','🥇','🥈','🥉','🏅','🎖️','🏆','🎗️','🎁','🎀','🎉','🎊','🎃','🎄','🎆','🎇','🧨','✨','🎈'],
+  'Objects': ['📱','💻','🖥️','🖨️','⌨️','🖱️','💾','💿','📀','🧮','📷','📸','📹','🎥','📞','☎️','⌚','📡','🔋','🔌','💡','🔦','🕯️','🪔','🧱','🪞','🪟','🛏️','🛋️','🪑','🚽','🚿','🛁','🧴','🧷','🧹','🧺','🧻','🧼','🧽','✂️','🗃️','🗄️','🔒','🔓','🔑','🗝️','🔨','🪓','⛏️','🛠️','⚔️','🛡️','🔧','🪛','🔩','⚙️','🔗','⛓️','🪝','🧲','🧪','🧫','🧬','🔭','🔬','🩺','🩹','💊','💉','🩸','💰','🪙','💳','🧾','✉️','📧','📦','📫','📬','📭','📮','✏️','✒️','🖋️','📝','📁','📂','📅','📆','📇','📈','📉','📊','📋','📌','📍','📎','📏','📐','🔍','🔎','📔','📒','📓','📕','📗','📘','📙','📚','📖','🔖','🏷️','💎','👑','🎩','🎓','👒','🧢','⛑️','💄','👓','🕶️','👔','👗','👘','🥻','🩱','🩲','👠','👡','👢','👜','👝','🎒','🧳','💼'],
+  'Symbols': ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✝️','☪️','✡️','☸️','☯️','☦️','🕉️','⭕','✅','❌','❎','🆗','🆙','🆒','🆕','🆓','🔝','🔛','🔜','‼️','⁉️','🔇','🔈','🔉','🔊','📢','📣','🔔','🔕','💹','♻️','🔀','🔁','🔂','▶️','⏩','⏭️','◀️','⏪','⏮️','⏸️','⏹️','⏺️','🔅','🔆','📶','🚫','⛔','🔞','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','⛎','🔱','📛','🔰','🏧','💱','💲','➕','➖','➗','✖️','♾️','🔮','🪬','🧿','🎴','🃏','🀄','♟️','🎲','🧩','🪆','🎎','🎏','🎐','🎑','🎍','🎋'],
+  'Science & Tech': ['🤖','🧠','💻','🖥️','📱','📡','🔭','🔬','🧪','🧫','🧬','⚛️','⚙️','🔧','💡','🔋','🔌','📻','🎙️','🎤','🔊','🎧','📷','📸','🎥','📽️','🚀','🛸','🪐','🌌','💾','💿','📀','🧮','🖨️','⌨️','🖱️','🗜️','🧲','🛰️','☢️','☣️','⚗️','🔩','🪛','🛠️'],
+};
+
+let _emojiOnPick = null;
+
+function _openEmojiPopup(anchorEl, onPick) {
+  _emojiOnPick = onPick;
+  const popup = document.getElementById('emojiPopup');
+  popup.innerHTML = `<input class="emoji-search" type="text" placeholder="Search (e.g. food, animals)…" oninput="_renderEmojiGrid(this.value)"><div class="emoji-inner" id="emojiInner"></div>`;
+  _renderEmojiGrid('');
+  const rect = anchorEl.getBoundingClientRect();
   popup.style.top  = (rect.bottom + 6) + 'px';
-  popup.style.left = Math.min(rect.left, window.innerWidth - 356) + 'px';
+  popup.style.left = Math.min(rect.left, window.innerWidth - 370) + 'px';
   popup.classList.remove('hidden');
   setTimeout(() => {
-    function onOut(ev) { if (!popup.contains(ev.target) && ev.target !== el) { popup.classList.add('hidden'); document.removeEventListener('click', onOut); } }
+    popup.querySelector('.emoji-search')?.focus();
+    function onOut(ev) { if (!popup.contains(ev.target) && ev.target !== anchorEl) { popup.classList.add('hidden'); document.removeEventListener('click', onOut); } }
     document.addEventListener('click', onOut);
   }, 10);
+}
+
+function _renderEmojiGrid(query) {
+  const inner = document.getElementById('emojiInner');
+  if (!inner) return;
+  const q = query.trim().toLowerCase();
+  let html = '';
+  for (const [cat, emojis] of Object.entries(_ALL_EMOJIS)) {
+    if (q && !cat.toLowerCase().includes(q)) continue;
+    html += `<div class="emoji-cat-label">${cat}</div><div class="emoji-grid-row">`;
+    html += emojis.map(em => `<button class="emoji-pop-btn" data-em="${em}">${em}</button>`).join('');
+    html += '</div>';
+  }
+  if (!html) html = '<div style="color:var(--muted);font-size:.85rem;padding:8px 2px;">No match — try "animals", "food", "symbols"…</div>';
+  inner.innerHTML = html;
+  inner.onclick = (ev) => {
+    const btn = ev.target.closest('.emoji-pop-btn');
+    if (btn && _emojiOnPick) { _emojiOnPick(btn.dataset.em || btn.textContent.trim()); }
+  };
+}
+
+function showEmojiPicker(id, el) {
+  _openEmojiPopup(el, (emoji) => pickEmoji(id, emoji));
 }
 
 async function pickEmoji(id, emoji) {
@@ -5917,40 +6370,7 @@ function _bhSwitchTab(tab) {
 
 // ── Bot emoji picker ──────────────────────────────────────────────────────────
 function bldOpenBotEmojiPicker(e) {
-  const popup  = document.getElementById('emojiPopup');
-  const emojis = [
-    '🔮','🪄','✨','💫','🌟','⭐','🌠','☄️','🎱','👁️',
-    '🤖','🧠','💻','📱','📡','🔭','🔬','🧪','🧬','⚛️',
-    '⚙️','🔧','💡','🔋','📻','🎤','🔊','🎧','📷','🎥',
-    '🎵','🎶','🎸','🎹','🎺','🎻','🥁','🎷','🪗','🪘',
-    '🐦','🦅','🦜','🦚','🦩','🐧','🦋','🐝','🐞','🕷️',
-    '🐕','🐈','🐰','🐻','🦊','🐺','🦁','🐯','🐘','🦒',
-    '🦓','🦏','🦛','🐊','🐢','🦎','🐸','🐙','🦑','🐬',
-    '🐳','🦈','🐟','🦀','🦞','🦔','🐿️','🦄','🐲','🦕',
-    '🌸','🌹','🌺','🌻','🌼','🍀','🌵','🌴','🌿','🍄',
-    '🍁','🌾','🌊','🏔️','⛰️','🌋','🌍','🌙','☀️','🌈',
-    '⚡','❄️','🔥','💧','☁️','🌤️','🌪️','🌊','🏝️','🌲',
-    '🍕','🍔','🍣','🍜','🌮','🍩','🎂','🍫','🍓','🍇',
-    '📖','📚','🗺️','🏆','👑','💎','💍','🗝️','🔍','🪬',
-    '🎭','🎪','🏰','🗼','🚀','✈️','⛵','🚂','🏡','🎠',
-    '😊','😍','🤩','😎','👻','💀','👽','🧙','🦸','🧜',
-    '🎮','🎯','🎨','🎬','🎃','🎁','🎉','🎊','🪁','🎰',
-    '❤️','🧡','💛','💚','💙','💜','⚽','🏀','🎱','⚔️',
-  ];
-  popup.innerHTML = emojis.map(em => `<button class="emoji-pop-btn" onclick="bldPickBotEmoji('${em}')">${em}</button>`).join('');
-  const rect = e.target.getBoundingClientRect();
-  popup.style.top  = (rect.bottom + 6) + 'px';
-  popup.style.left = Math.min(rect.left, window.innerWidth - 356) + 'px';
-  popup.classList.remove('hidden');
-  setTimeout(() => {
-    function onOut(ev) {
-      if (!popup.contains(ev.target) && ev.target !== e.target) {
-        popup.classList.add('hidden');
-        document.removeEventListener('click', onOut);
-      }
-    }
-    document.addEventListener('click', onOut);
-  }, 10);
+  _openEmojiPopup(e.target, (emoji) => bldPickBotEmoji(emoji));
 }
 
 function bldPickBotEmoji(emoji) {
@@ -6848,6 +7268,13 @@ function bldStopBot() {
 // ── Init ───────────────────────────────────────────────────────────────────────
 _initAllViz();
 _render();
+
+// Apply expo feature flag — hides classifier cards and centers remaining 2
+if (EXPO_HIDE_CLASSIFIERS) {
+  document.getElementById('mode-clf-image')?.classList.add('hidden');
+  document.getElementById('mode-clf-text')?.classList.add('hidden');
+  document.getElementById('modeCards')?.classList.add('expo-two');
+}
 </script>
 </body>
 </html>
