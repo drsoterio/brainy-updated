@@ -27,11 +27,32 @@ import io
 import time
 from pathlib import Path
 
+import numpy as np
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
+
+
+
+def _pca2d(arr: np.ndarray) -> list:
+    """arr: (N, D) float. Returns [[x, y], ...] normalized to [-1, 1]."""
+    arr = arr - arr.mean(axis=0, keepdims=True)
+    n, d = arr.shape
+    if n < 2 or d < 1:
+        return [[0.0, 0.0]] * n
+    _, _, Vt = np.linalg.svd(arr, full_matrices=False)
+    proj = arr @ Vt[:min(2, d)].T
+    if proj.shape[1] < 2:
+        proj = np.hstack([proj, np.zeros((n, 1))])
+    out = proj[:, :2].astype(float)
+    for j in range(2):
+        col = out[:, j]; lo, hi = col.min(), col.max(); rng = hi - lo
+        if rng > 1e-8:
+            out[:, j] = (col - lo) / rng * 2 - 1
+    return out.tolist()
 
 
 # ── Device selection ─────────────────────────────────────────────────────────
@@ -276,7 +297,7 @@ class ClassifierTrainer:
     # ── Training dispatch ─────────────────────────────────────────────────────
 
     def train(self, epochs: int = 30, lr: float = 1e-3,
-              batch_size: int = 8, **_):
+              batch_size: int = 32, **_):
         if len(self.labels) < 2:
             yield {'phase': 'error', 'message': 'Define at least 2 labels before training.'}
             return
@@ -582,6 +603,26 @@ class ClassifierTrainer:
         self._confusion = _confusion_matrix(y_true, y_pred, n_classes)
         self.trained = True
 
+        # PCA on model logits for each training example
+        pca_points: list = []
+        pca_labels_out: list = []
+        try:
+            reps, rep_labels = [], []
+            with torch.no_grad():
+                for xb, yb in loader:
+                    xb = xb.to(self.device)
+                    logits = self._model(xb)
+                    reps.append(logits.cpu().numpy())
+                    yl = yb.tolist() if isinstance(yb, torch.Tensor) else list(yb)
+                    rep_labels.extend([self.labels[i] for i in yl
+                                       if isinstance(i, int) and i < len(self.labels)])
+            if reps and len(rep_labels) >= 2:
+                arr = np.vstack(reps)
+                pca_points = _pca2d(arr)
+                pca_labels_out = rep_labels
+        except Exception:
+            pass
+
         n_params = sum(p.numel() for p in self._model.parameters())
         yield {
             'phase':            'done',
@@ -591,6 +632,8 @@ class ClassifierTrainer:
             'confusion_matrix': self._confusion,
             'final_accuracy':   round(self.history['accuracy'][-1] * 100, 1),
             'sample':           f'{round(self.history["accuracy"][-1]*100,1)}% accuracy',
+            'pca_points':       pca_points,
+            'pca_labels':       pca_labels_out,
         }
 
     # ── Prediction ────────────────────────────────────────────────────────────

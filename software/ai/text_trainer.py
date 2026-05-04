@@ -20,6 +20,32 @@ os.environ.setdefault('TOKENIZERS_PARALLELISM', 'false')
 _TOKENIZER_NAME = 'distilgpt2'   # only vocab/merges files are loaded, not model weights
 
 
+def _pca2d(arr: np.ndarray) -> list:
+    """arr: (N, D) float. Returns [[x, y], ...] normalized to [-1, 1]."""
+    arr = arr - arr.mean(axis=0, keepdims=True)
+    n, d = arr.shape
+    if n < 2 or d < 1:
+        return [[0.0, 0.0]] * n
+    _, _, Vt = np.linalg.svd(arr, full_matrices=False)
+    proj = arr @ Vt[:min(2, d)].T
+    if proj.shape[1] < 2:
+        proj = np.hstack([proj, np.zeros((n, 1))])
+    out = proj[:, :2].astype(float)
+    for j in range(2):
+        col = out[:, j]; lo, hi = col.min(), col.max(); rng = hi - lo
+        if rng > 1e-8:
+            out[:, j] = (col - lo) / rng * 2 - 1
+    return out.tolist()
+
+
+def _best_device() -> torch.device:
+    if torch.backends.mps.is_available():
+        return torch.device('mps')
+    if torch.cuda.is_available():
+        return torch.device('cuda')
+    return torch.device('cpu')
+
+
 # ── Model ──────────────────────────────────────────────────────────────────────
 
 class _TokenLSTM(nn.Module):
@@ -47,7 +73,7 @@ class _TokenLSTM(nn.Module):
 
 class TextTrainer:
     def __init__(self):
-        self.device = torch.device('cpu')
+        self.device = _best_device()
         self._texts: list[str]  = []
         self._model: _TokenLSTM | None = None
         self._tokenizer         = None
@@ -193,7 +219,7 @@ class TextTrainer:
             y_t = torch.tensor([pad(y) for y in ys])
 
             loader = DataLoader(TensorDataset(x_t, y_t),
-                                batch_size=min(8, len(xs)), shuffle=True, num_workers=0)
+                                batch_size=min(32, len(xs)), shuffle=True, num_workers=0)
 
             self._model = _TokenLSTM(vocab_size=vocab_size).to(self.device)
             optimizer   = torch.optim.Adam(self._model.parameters(), lr=lr)
@@ -217,6 +243,8 @@ class TextTrainer:
                 n_batches  = 0
 
                 for xb, yb in loader:
+                    xb = xb.to(self.device)
+                    yb = yb.to(self.device)
                     hidden = self._model.init_hidden(xb.size(0), self.device)
                     optimizer.zero_grad()
                     logits, _ = self._model(xb, hidden)
@@ -251,12 +279,34 @@ class TextTrainer:
             self.trained     = True
             final_sample     = self._sample(max_new_tokens=60, temperature=0.9)
 
+            # PCA on LSTM hidden states for each training sequence
+            pca_points: list = []
+            pca_labels: list = []
+            try:
+                self._model.eval()
+                hiddens = []
+                with torch.no_grad():
+                    for seq in all_seqs:
+                        loc = self._to_local(seq)
+                        if not loc:
+                            continue
+                        x = torch.tensor([loc], device=self.device)
+                        _, (h, _) = self._model.lstm(self._model.embed(x))
+                        hiddens.append(h[-1, 0].cpu().numpy())
+                if len(hiddens) >= 2:
+                    pca_points = _pca2d(np.array(hiddens, dtype=np.float32))
+                    pca_labels = [f'text {i+1}' for i in range(len(hiddens))]
+            except Exception:
+                pass
+
             yield {
                 'phase':      'done',
                 'sample':     final_sample,
                 'history':    self.history,
                 'n_params':   n_params,
                 'vocab_size': vocab_size,
+                'pca_points': pca_points,
+                'pca_labels': pca_labels,
             }
 
         except Exception as exc:

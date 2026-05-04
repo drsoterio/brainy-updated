@@ -202,9 +202,21 @@
     .train-layout { display: flex; flex-direction: column; gap: 14px; }
     .row2-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: stretch; }
     #setupDataCol.smart-full { grid-column: 1 / -1; }
-    .row3-grid { display: grid; grid-template-columns: 3fr 1fr; gap: 14px; align-items: stretch; }
-    .stats-sidebar { display: flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 18px; min-width: 0; }
+    .row3-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+    .stats-sidebar {
+      position: fixed; right: 0; top: 64px; bottom: 0; width: calc(100vw / 4);
+      overflow-y: auto; z-index: 9;
+      display: flex; flex-direction: column; gap: 12px;
+      padding: 16px; background: var(--card-bg);
+      border-left: 1.5px solid var(--border);
+    }
+    .stats-sidebar.hidden-sidebar { display: none; }
+    .card-body.brain-active { padding-right: calc(100vw / 4 + 18px); }
     @media (max-width: 1100px) { .row2-grid, .row3-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) {
+      .stats-sidebar { position: static; width: 100%; border-left: none; border: 1.5px solid var(--border); border-radius: 14px; }
+      .card-body.brain-active { padding-right: 20px; }
+    }
 
     /* Upload panel */
     .upload-col { display: flex; flex-direction: column; gap: 10px; padding: 16px 12px 16px 16px; background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 18px; min-width: 0; }
@@ -237,27 +249,32 @@
 
     /* Live preview panel */
     .preview-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 16px; background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 18px; }
-    #imgPreviewWrap { min-height: 500px; display: flex; flex-direction: column; }
-    #txtPreviewWrap { min-height: 500px; display: flex; flex-direction: column; }
+    #imgPreviewWrap { display: flex; flex-direction: column; }
+    #txtPreviewWrap { min-height: 168px; display: flex; flex-direction: column; }
     .preview-frame {
       background: #0d0a1a; border: 2px solid var(--border); border-radius: 14px;
       overflow: hidden; display: flex; align-items: center; justify-content: center;
-      flex: 1; min-height: 500px; width: 100%;
+      flex: 1; min-height: 168px; width: 100%;
     }
-    .preview-frame img { width: 100%; height: 100%; object-fit: fill; image-rendering: pixelated; display: block; }
+    /* Train-tab canvas: locked to fixed height — never grows with content */
+    #imgPreviewWrap .preview-frame { height: 280px; flex: none; min-height: unset; }
+    .preview-frame img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; display: block; }
+    /* Live training preview cells — CSS grid, tiles fill full width+height */
+    #prevGrid { display: grid; width: 100%; height: 100%; gap: 2px; padding: 4px; box-sizing: border-box; }
+    #prevGrid canvas { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
     .preview-ph { color: var(--muted); font-size: 1rem; text-align: center; padding: 30px; line-height: 1.6; }
 
     /* Webcam */
     .cam-btn-row { display: flex; gap: 6px; margin-top: 8px; }
     .cam-panel { margin-top: 8px; background: #0f172a; border-radius: 12px; overflow: hidden; }
-    #camVideo { width: 100%; display: block; border-radius: 8px; max-height: 180px; object-fit: cover; background: #1e293b; }
+    #camVideo { width: 100%; display: block; border-radius: 8px; min-height: 300px; max-height: 480px; aspect-ratio: 4/3; object-fit: cover; background: #1e293b; }
     .cam-actions { display: flex; gap: 6px; padding: 8px; }
     #camCaptureCanvas { display: none; }
 
     .text-sample-box {
       background: #0f172a; border-radius: 14px; border: 2px solid var(--border);
       padding: 14px; font-family: monospace; font-size: .95rem; color: #64748b;
-      min-height: 500px; overflow-y: auto;
+      min-height: 168px; overflow-y: auto;
       line-height: 1.7; white-space: pre-wrap; word-break: break-word;
     }
     .text-sample-box.has-text { color: #94a3b8; }
@@ -287,6 +304,45 @@
     .hyper-val  { color: var(--primary); font-weight: 800; }
     .hyper-hint { font-size: .88rem; color: var(--muted); line-height: 1.4; }
     .param-next-btn { margin-top: 2px; align-self: flex-end; }
+    .param-help-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 15px; height: 15px; border-radius: 50%;
+      border: 1.5px solid var(--muted); background: transparent;
+      color: var(--muted); font-size: .6rem; font-weight: 800;
+      cursor: pointer; font-family: inherit; margin-left: 5px;
+      flex-shrink: 0; line-height: 1; padding: 0;
+      transition: background .12s, color .12s, border-color .12s;
+      vertical-align: middle;
+    }
+    .param-help-btn:hover { background: var(--primary-sel); color: var(--primary-dark); border-color: var(--primary-mid); }
+    .param-help-panel {
+      font-size: .82rem; color: var(--muted); line-height: 1.55;
+      background: var(--primary-lite); border-radius: 8px;
+      padding: 9px 12px; border-left: 3px solid var(--primary-mid);
+      margin-top: 2px;
+    }
+    .param-help-panel.hidden { display: none; }
+    .php-section { margin-bottom: 7px; }
+    .php-section:last-child { margin-bottom: 0; }
+    .php-label { font-size: .72rem; font-weight: 700; letter-spacing: .04em;
+      text-transform: uppercase; color: var(--primary-dark); margin-bottom: 2px; }
+    .php-dyn { color: var(--text); font-weight: 500; }
+
+    /* ── Param reveal fade-in ───────────────────────────── */
+    @keyframes param-fadein {
+      from { opacity: 0; transform: translateY(5px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .param-fadein { animation: param-fadein .2s ease-out; }
+
+    /* ── Epoch evolution strip ──────────────────────────── */
+    .evo-img-cell { flex: 0 0 auto; position: relative; border-radius: 6px; overflow: hidden; }
+    .evo-img-cell img { display: block; width: 64px; height: 64px; object-fit: none; object-position: 0 0; image-rendering: pixelated; }
+    .evo-img-label { position: absolute; bottom: 2px; left: 0; right: 0; text-align: center;
+      font-size: .6rem; font-weight: 700; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.7); }
+    .evo-text-row { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; }
+    .evo-text-epoch { font-size: .68rem; font-weight: 700; color: var(--primary); margin-bottom: 3px; }
+    .evo-text-content { font-size: .82rem; color: var(--text); line-height: 1.45; white-space: pre-wrap; }
 
     .h-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 3px; background: var(--border); outline: none; cursor: pointer; display: block; }
     .h-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--primary); border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.18); cursor: pointer; }
@@ -451,6 +507,65 @@
     }
     .smart-trained-badge { display: inline-block; background: #dcfce7; color: #166534; border-radius: 999px; padding: 3px 12px; font-size: .82rem; font-weight: 700; margin-bottom: 8px; }
     .tmc-card.unavailable { opacity: .5; cursor: not-allowed; pointer-events: none; }
+
+    /* ── Brain page two-area layout (messages sidebar + main workspace) ── */
+    .brain-two-col { display: grid; grid-template-columns: 230px 1fr; gap: 14px; align-items: start; }
+    .brain-msg-sidebar {
+      position: sticky; top: 12px;
+      background: var(--card); border: 1.5px solid var(--border); border-radius: 14px;
+      overflow: hidden; display: flex; flex-direction: column; max-height: calc(100vh - 120px);
+    }
+    .brain-msg-hd { padding: 10px 12px 8px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .brain-msg-title { font-size: .82rem; font-weight: 800; color: var(--text); letter-spacing: .01em; }
+    .brain-msg-list { flex: 1; overflow-y: auto; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+    .brain-msg-item {
+      font-size: .78rem; line-height: 1.45; padding: 6px 8px;
+      background: var(--card-bg); border-radius: 8px; border-left: 3px solid var(--border);
+      transition: opacity .4s;
+    }
+    .brain-msg-item.ok  { border-left-color: var(--green); }
+    .brain-msg-item.info { border-left-color: var(--primary-mid); }
+    .brain-msg-item.warn { border-left-color: #f59e0b; }
+    .brain-msg-item.old { opacity: .5; }
+    .brain-msg-time { font-size: .68rem; color: var(--muted); margin-top: 2px; }
+    .ts-block { background: var(--card); border: 1.5px solid var(--border); border-radius: 10px; margin-bottom: 6px; overflow: hidden; }
+    .ts-header { display: flex; align-items: center; gap: 6px; padding: 7px 10px; cursor: pointer; user-select: none; }
+    .ts-header:hover { background: var(--primary-sel); }
+    .ts-chevron { font-size: .65rem; color: var(--muted); flex-shrink: 0; width: 10px; }
+    .ts-title { font-size: .78rem; font-weight: 700; color: var(--text); }
+    .ts-summary { font-size: .72rem; color: var(--muted); padding: 0 10px 7px 26px; line-height: 1.4; }
+    .ts-body { padding: 5px 10px 8px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 5px; }
+    .ts-row { display: flex; align-items: flex-start; gap: 6px; }
+    .ts-row-icon { font-size: .72rem; flex-shrink: 0; margin-top: 2px; }
+    .ts-row-label { font-size: .63rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: 1px; }
+    .ts-row-val { font-size: .74rem; color: var(--text); line-height: 1.4; }
+    .cmp-loss-legend { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+    .cmp-legend-item { display: flex; align-items: center; gap: 4px; font-size: .72rem; color: var(--text); }
+    .cmp-legend-dot  { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .cmp-samples-grid { display: grid; gap: 10px; margin-top: 10px; }
+    .cmp-col-head { font-size: .72rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+    .cmp-sample-img { width: 100%; aspect-ratio: 1; object-fit: contain; border-radius: 8px; background: var(--card-bg); image-rendering: pixelated; display: block; }
+    .cmp-sample-txt { font-size: .75rem; color: var(--text); line-height: 1.5; padding: 8px 10px; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border); min-height: 60px; }
+    /* Narrative panel */
+    .cmp-narrative { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+    .cmp-narrative-title { font-size: .78rem; font-weight: 700; margin-bottom: 7px; color: var(--text); }
+    .cmp-narrative ul { margin: 0 0 7px 0; padding-left: 16px; }
+    .cmp-narrative li { font-size: .77rem; color: var(--text); line-height: 1.5; margin-bottom: 2px; }
+    .cmp-narrative .cmp-narrative-close { font-size: .76rem; color: var(--primary-dark); font-style: italic; border-top: 1px solid var(--border); padding-top: 7px; margin-top: 5px; }
+    /* Recon bar chart */
+    .cmp-recon-wrap { margin-top: 8px; }
+    .cmp-recon-title { font-size: .75rem; font-weight: 700; margin-bottom: 5px; color: var(--text); }
+    .cmp-recon-bar-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+    .cmp-recon-bar-label { font-size: .68rem; color: var(--muted); min-width: 36px; text-align: right; flex-shrink: 0; }
+    .cmp-recon-bar-track { flex: 1; background: var(--border); border-radius: 4px; height: 8px; overflow: hidden; }
+    .cmp-recon-bar-fill { height: 100%; border-radius: 4px; transition: width .4s; }
+    .cmp-recon-bar-val { font-size: .65rem; color: var(--muted); min-width: 42px; }
+    .brain-main { min-width: 0; }
+    @media (max-width: 1100px) {
+      .brain-two-col { grid-template-columns: 1fr; }
+      .brain-msg-sidebar { position: static; max-height: none; }
+      .brain-msg-list { max-height: 140px; }
+    }
 
     /* ── Full-page library overlay ─────────────────── */
     .lib-overlay  { position:fixed; inset:0; background:var(--card-bg); z-index:20; display:flex; flex-direction:column; overflow:hidden; }
@@ -727,7 +842,7 @@
         <div class="home-title">
           br<span class="brand-a">a</span><span class="brand-i">i</span>ny
         </div>
-        <div class="home-tagline">Upload data. Watch your model learn. See it create something new.</div>
+        <div class="home-tagline">Your ideas, your bot, your AI.</div>
 
         <!-- Mode selector — four direct cards -->
         <div class="mode-cards">
@@ -782,27 +897,27 @@
       <div id="txtModePicker" class="hidden" style="flex-shrink:0;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
         <div class="tmc-card" id="tmcard-scratch" onclick="selectTrainingMode('scratch')">
           <div class="tmc-check">✓</div>
-          <div class="tmc-head"><span class="tmc-icon">🧠</span><span class="tmc-title">Machine Learning</span></div>
-          <div class="tmc-desc">Train a brain from zero using your data.</div>
-          <div class="tmc-best"><strong>Best for:</strong> Watching how a machine actually learns — step by step.</div>
+          <div class="tmc-head"><span class="tmc-icon">🧠</span><span class="tmc-title">Train from scratch</span></div>
+          <div class="tmc-desc">A new model that learns only from your data.</div>
+          <div class="tmc-best"><strong>Best for:</strong> Seeing the full learning process — from a blank slate to a trained model, step by step.</div>
           <details class="tmc-more" onclick="event.stopPropagation()">
             <summary>ⓘ Learn more</summary>
             <div class="tmc-more-body">
-              <div><strong>How it works:</strong> Start with an empty neural network. It knows nothing until it sees your examples and adjusts its weights.</div>
-              <div><strong>Result:</strong> You observe real ML training — loss curves, weight updates, and pattern discovery — all from your own data.</div>
+              <div><strong>How it works:</strong> Start with a randomly initialised neural network — it knows nothing. It studies your examples repeatedly, adjusting its weights (parameters) each time to get better at the patterns.</div>
+              <div><strong>Result:</strong> You watch real ML training — loss curves falling, weight updates happening, pattern discovery emerging from your own data.</div>
             </div>
           </details>
         </div>
         <div class="tmc-card" id="tmcard-smart" onclick="selectTrainingMode('smart_prompt')">
           <div class="tmc-check">✓</div>
-          <div class="tmc-head"><span class="tmc-icon">✨</span><span class="tmc-title">AI</span></div>
-          <div class="tmc-desc">Use a powerful AI model guided by your examples.</div>
-          <div class="tmc-best"><strong>Best for:</strong> High-quality results instantly, no training wait.</div>
+          <div class="tmc-head"><span class="tmc-icon">✨</span><span class="tmc-title">Use a pre-trained model</span></div>
+          <div class="tmc-desc">A model already trained on millions of texts. You add your examples to guide its style.</div>
+          <div class="tmc-best"><strong>Best for:</strong> High-quality results right away — no training wait.</div>
           <details class="tmc-more" onclick="event.stopPropagation()">
             <summary>ⓘ Learn more</summary>
             <div class="tmc-more-body">
-              <div><strong>How it works:</strong> A pre-trained AI looks at your examples as context right before it responds — no retraining needed.</div>
-              <div><strong>Result:</strong> High quality output. The AI is already very capable; your examples simply guide its style.</div>
+              <div><strong>How it works:</strong> Your examples are converted into embeddings (lists of numbers that capture their meaning). When you ask something new, the model finds the closest examples using cosine similarity and uses them to guide the output. This is called RAG — Retrieval-Augmented Generation.</div>
+              <div><strong>Result:</strong> High-quality output instantly. Your examples guide the style; the pre-trained model does the heavy lifting.</div>
             </div>
           </details>
         </div>
@@ -815,27 +930,27 @@
         <div id="clfModePicker" style="flex-shrink:0;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
           <div class="tmc-card" id="clf-tm-ml" onclick="selectClfTrainingMode('scratch')">
             <div class="tmc-check">✓</div>
-            <div class="tmc-head"><span class="tmc-icon">🧠</span><span class="tmc-title">Machine Learning</span></div>
-            <div class="tmc-desc">Train a brain from zero using your data.</div>
-            <div class="tmc-best"><strong>Best for:</strong> Watching how a machine actually learns — step by step.</div>
+            <div class="tmc-head"><span class="tmc-icon">🧠</span><span class="tmc-title">Train from scratch</span></div>
+            <div class="tmc-desc">A new model that learns only from your labelled examples.</div>
+            <div class="tmc-best"><strong>Best for:</strong> Seeing the full learning process — from random to trained, step by step.</div>
             <details class="tmc-more" onclick="event.stopPropagation()">
               <summary>ⓘ Learn more</summary>
               <div class="tmc-more-body">
-                <div><strong>How it works:</strong> A small classifier network starts untrained. It improves by comparing its guesses to your labels and updating weights — the same idea as big models, on your data.</div>
-                <div><strong>What you&apos;ll see:</strong> Loss and accuracy changing over epochs so you can watch real training, not just a black box.</div>
+                <div><strong>How it works:</strong> A small classifier network starts with random weights. It improves by comparing its guesses to your labels and updating its parameters — the same idea behind big models, on your data.</div>
+                <div><strong>What you&apos;ll see:</strong> Loss falling and accuracy rising over epochs so you can watch real training, not just a black box.</div>
               </div>
             </details>
           </div>
           <div class="tmc-card" id="clf-tm-ai" onclick="selectClfTrainingMode('finetune')">
             <div class="tmc-check">✓</div>
-            <div class="tmc-head"><span class="tmc-icon">✨</span><span class="tmc-title">AI</span></div>
-            <div class="tmc-desc">Use a powerful AI model guided by your examples.</div>
-            <div class="tmc-best"><strong>Best for:</strong> High-quality results instantly, no training wait.</div>
+            <div class="tmc-head"><span class="tmc-icon">✨</span><span class="tmc-title">Use a pre-trained model</span></div>
+            <div class="tmc-desc">A model already trained on huge datasets, adapted to your categories.</div>
+            <div class="tmc-best"><strong>Best for:</strong> Better accuracy with fewer examples and faster, more stable training.</div>
             <details class="tmc-more" onclick="event.stopPropagation()">
               <summary>ⓘ Learn more</summary>
               <div class="tmc-more-body">
-                <div><strong>How it works:</strong> A pretrained vision or language backbone (already trained on huge datasets) is adapted to your categories with a light training stage — far less starting from scratch.</div>
-                <div><strong>What you get:</strong> Strong accuracy with fewer examples and faster, more stable training than training a full network from zero.</div>
+                <div><strong>How it works:</strong> A pretrained backbone (already trained on millions of images or texts) gets a new output layer for your categories, then fine-tuned with a light training stage — far less work than training from zero.</div>
+                <div><strong>What you get:</strong> Strong accuracy with fewer examples because the model already understands basic features like edges, colours, and shapes.</div>
               </div>
             </details>
           </div>
@@ -848,7 +963,7 @@
         <div class="row2-grid">
 
           <div class="upload-col" id="setupDataCol">
-          <div class="panel-title" style="margin-bottom:3px;">Step 2 · Your Data</div>
+          <div class="panel-title" id="dataStepTitle" style="margin-bottom:3px;">Step 2 · Your Data</div>
           <div style="font-size:.82rem;color:var(--muted);line-height:1.45;margin-bottom:6px;">Add examples to learn from.</div>
 
           <!-- Image upload -->
@@ -925,70 +1040,177 @@
         </div>
 
           <div class="hyper-col" id="setupParamsCol">
-          <div class="panel-title" style="margin-bottom:3px;">Step 3 · Parameters</div>
+          <div class="panel-title" id="paramsStepTitle" style="margin-bottom:3px;">Step 3 · Parameters</div>
           <div style="font-size:.82rem;color:var(--muted);line-height:1.45;margin-bottom:6px;">Set how the model learns.</div>
 
           <!-- Epochs -->
           <div class="hyper-group" id="epochsGroup">
-            <div class="hyper-label">Epochs (Practice Rounds) <span class="hyper-val" id="epochsVal">60</span></div>
+            <div class="hyper-label">
+              <span>Epochs <button class="param-help-btn" onclick="_toggleParamHelp(this)" title="More info">?</button></span>
+              <span class="hyper-val" id="epochsVal">60</span>
+            </div>
             <input type="range" class="h-slider" id="epochsSlider" min="10" max="200" value="60"
               oninput="document.getElementById('epochsVal').textContent=this.value;updateEpochViz(+this.value)">
             <div class="param-viz" id="epochViz"></div>
-            <div class="hyper-hint">The number of times the AI reviews your entire stack of images. More rounds = better memory, but it takes more time.</div>
+            <div class="hyper-hint">How many full passes the model makes through your data. <span id="epochDynHint" style="font-weight:700;color:var(--primary-dark);"></span></div>
+            <div class="param-help-panel hidden">
+              <div class="php-section">
+                <div class="php-label">What it is</div>
+                <div>One <strong>epoch</strong> = one full pass of the optimizer through every training example. Each pass updates the model's <strong>weights</strong> via <strong>gradient descent</strong> — nudging each value in the direction that reduces error. More epochs → better fit, but risk of <strong>overfitting</strong>: memorising your data instead of learning general patterns.</div>
+              </div>
+              <div class="php-section">
+                <div class="php-label">In your model</div>
+                <div class="php-dyn" id="phpDyn-epochs"></div>
+              </div>
+              <div class="php-section">
+                <div class="php-label">In comparison</div>
+                <div>A homework drill: 5–50 passes. Research fine-tuning: 100–500 passes. GPT-4 was trained on 1.8 trillion tokens — seen roughly once, but each token effectively acts as a unique "example" in a single enormous epoch.</div>
+              </div>
+            </div>
+            <button class="btn btn-secondary btn-sm param-next-btn" onclick="_nextParamFrom(this.closest('.hyper-group').id)">Next →</button>
           </div>
 
           <!-- Learning speed -->
           <div class="hyper-group" id="lrGroup">
-            <div class="hyper-label">Learning Rate (Correction Steps)</div>
+            <div class="hyper-label">
+              <span>Learning Rate <button class="param-help-btn" onclick="_toggleParamHelp(this)" title="More info">?</button></span>
+            </div>
             <div class="chip-row">
               <button class="chip"        onclick="setChip(this,'lr','fast');updateSpeedViz('fast')">Fast</button>
               <button class="chip active" onclick="setChip(this,'lr','steady');updateSpeedViz('steady')">Steady</button>
               <button class="chip"        onclick="setChip(this,'lr','careful');updateSpeedViz('careful')">Careful</button>
             </div>
             <div class="param-viz" id="speedViz"></div>
-            <div class="hyper-hint">How big of a change the AI makes when fixing its mistakes. Giant leaps are fast but might skip over the exact right answer; baby steps are careful but take longer.</div>
+            <div class="hyper-hint">How big the weight updates are after each batch.</div>
+            <div class="param-help-panel hidden">
+              <div class="php-section">
+                <div class="php-label">What it is</div>
+                <div>The <strong>learning rate</strong> (α) is the step size in <strong>gradient descent</strong>. After each batch: <em>w -= α × gradient</em>. Too high → loss oscillates and diverges. Too low → training stalls and never converges.</div>
+              </div>
+              <div class="php-section">
+                <div class="php-label">In your model</div>
+                <div class="php-dyn" id="phpDyn-lr"></div>
+              </div>
+              <div class="php-section">
+                <div class="php-label">In comparison</div>
+                <div><strong>Fast (0.01):</strong> aggressive, good for quick experiments. <strong>Steady (0.001):</strong> the go-to default for most neural nets. <strong>Careful (0.0001):</strong> fine-tuning or fragile models. GPT-4 used a peak lr of ~6×10⁻⁴ with a cosine decay schedule — tuned over months of ablation runs.</div>
+              </div>
+            </div>
+            <button class="btn btn-secondary btn-sm param-next-btn" onclick="_nextParamFrom(this.closest('.hyper-group').id)">Next →</button>
           </div>
 
           <!-- Image: Latent dim -->
           <div class="hyper-group" id="latentGroup">
-            <div class="hyper-label">Latent Dimension (Imagination Details) <span class="hyper-val" id="latentVal">128</span></div>
-            <input type="range" class="h-slider" id="latentSlider" min="32" max="256" step="32" value="128"
+            <div class="hyper-label">
+              <span>Latent Dimension <button class="param-help-btn" onclick="_toggleParamHelp(this)" title="More info">?</button></span>
+              <span class="hyper-val" id="latentVal">256</span>
+            </div>
+            <input type="range" class="h-slider" id="latentSlider" min="32" max="256" step="32" value="256"
               oninput="document.getElementById('latentVal').textContent=this.value;updateLatentViz(+this.value)">
             <div class="param-viz" id="latentViz"></div>
-            <div class="hyper-hint">How many specific features the AI tracks to remember your images. A higher number gives the AI a richer imagination, but requires more brainpower.</div>
+            <div class="hyper-hint">Size of the model's internal feature space. Bigger = richer patterns, slower training.</div>
+            <div class="param-help-panel hidden">
+              <div class="php-section">
+                <div class="php-label">What it is</div>
+                <div>In a <strong>Variational Autoencoder (VAE)</strong>, the <strong>latent space</strong> is a compressed numerical vector your model uses to "think about" an image. The encoder squeezes your image into this vector; the decoder expands it back. A larger latent dimension gives more room to store visual detail.</div>
+              </div>
+              <div class="php-section">
+                <div class="php-label">In your model</div>
+                <div class="php-dyn" id="phpDyn-latent"></div>
+              </div>
+              <div class="php-section">
+                <div class="php-label">In comparison</div>
+                <div>Tiny research VAEs: 32–64 dims. Standard image VAEs: 128–512 dims. Stable Diffusion's latent space: 4×64×64 = <strong>16,384 dims</strong>. GPT-4's internal state: ~12,288 dims per token position — but those encode language, not pixels.</div>
+              </div>
+            </div>
+            <button class="btn btn-secondary btn-sm param-next-btn" onclick="_nextParamFrom(this.closest('.hyper-group').id)">Next →</button>
           </div>
 
           <!-- Text Scratch: Window size -->
           <div class="hyper-group hidden" id="scratchParams">
-            <div class="hyper-label">Window Size <span class="hyper-val" id="winVal">40</span></div>
+            <div class="hyper-label">
+              <span>Window Size <button class="param-help-btn" onclick="_toggleParamHelp(this)" title="More info">?</button></span>
+              <span class="hyper-val" id="winVal">40</span>
+            </div>
             <input type="range" class="h-slider" id="winSlider" min="20" max="60" step="5" value="40"
               oninput="document.getElementById('winVal').textContent=this.value">
-            <div class="hyper-hint">How many tokens the model sees at once when learning patterns</div>
+            <div class="hyper-hint">How many tokens the model sees at once when learning patterns.</div>
+            <div class="param-help-panel hidden">
+              <div class="php-section">
+                <div class="php-label">What it is</div>
+                <div>The <strong>context window</strong> (sequence length) is how many tokens the LSTM sees in one forward pass. Longer windows let the model learn longer-range patterns, but use more memory and slow each training step. Tokens here are <strong>subword units</strong> from GPT-2's tokenizer — roughly 0.75 words per token on average.</div>
+              </div>
+              <div class="php-section">
+                <div class="php-label">In your model</div>
+                <div class="php-dyn" id="phpDyn-win"></div>
+              </div>
+              <div class="php-section">
+                <div class="php-label">In comparison</div>
+                <div>Short-text LSTM: 20–40 tokens ≈ a sentence. GPT-2: 1,024 tokens ≈ a full article. GPT-4: ~128,000 tokens ≈ a short novel. The longer the window, the more the model can "remember" when generating — but training cost scales with every extra token.</div>
+              </div>
+            </div>
+            <button class="btn btn-secondary btn-sm param-next-btn" onclick="_nextParamFrom(this.closest('.hyper-group').id)">Next →</button>
           </div>
 
           <!-- Text Fine-tune: Batch size -->
           <div class="hyper-group hidden" id="finetuneParams">
-            <div class="hyper-label">Batch Size</div>
+            <div class="hyper-label">
+              <span>Batch Size <button class="param-help-btn" onclick="_toggleParamHelp(this)" title="More info">?</button></span>
+            </div>
             <div class="chip-row">
               <button class="chip"        onclick="setChip(this,'txtBatch','2')">2</button>
               <button class="chip active" onclick="setChip(this,'txtBatch','4')">4</button>
               <button class="chip"        onclick="setChip(this,'txtBatch','8')">8</button>
             </div>
-            <div class="hyper-hint">Texts studied at once — use 2 on low-RAM machines</div>
+            <div class="hyper-hint">How many examples processed before each weight update.</div>
+            <div class="param-help-panel hidden">
+              <div class="php-section">
+                <div class="php-label">What it is</div>
+                <div><strong>Batch size</strong> is how many examples are processed before one <strong>gradient descent</strong> step. Smaller batches → noisier but more frequent updates, which can help regularisation. Larger batches → smoother gradients, but need more memory.</div>
+              </div>
+              <div class="php-section">
+                <div class="php-label">In your model</div>
+                <div class="php-dyn" id="phpDyn-txtBatch"></div>
+              </div>
+              <div class="php-section">
+                <div class="php-label">In comparison</div>
+                <div>Debug runs: batch 1–2. Fine-tuning LLMs: 2–8 (memory-limited). Full pretraining runs of GPT-4: estimated millions of tokens per batch across thousands of GPUs — each gradient step aggregates an enormous amount of signal.</div>
+              </div>
+            </div>
           </div>
 
           <!-- Image: Augmentation -->
           <div class="hyper-group" id="augGroup">
-            <div class="hyper-label">Data Augmentation (Image Remixes) <span class="hyper-val" id="augVal">50×</span></div>
+            <div class="hyper-label">
+              <span>Data Augmentation <button class="param-help-btn" onclick="_toggleParamHelp(this)" title="More info">?</button></span>
+              <span class="hyper-val" id="augVal">50×</span>
+            </div>
             <input type="range" class="h-slider" id="augSlider" min="10" max="100" step="10" value="50"
               oninput="document.getElementById('augVal').textContent=this.value + '×';updateAugViz(+this.value)">
             <div class="param-viz" id="augViz"></div>
-            <div class="hyper-hint">Automatically flipping, rotating, and recoloring your photos to give the AI a massive variety of examples to learn from.</div>
+            <div class="hyper-hint">Synthetic copies of each example, with random transforms.</div>
+            <div class="param-help-panel hidden">
+              <div class="php-section">
+                <div class="php-label">What it is</div>
+                <div><strong>Data augmentation</strong> synthetically expands your training set by applying random transforms — flips, rotations (±10°), brightness/contrast jitter — to each image. This forces the model to learn invariant features rather than memorising exact pixel values, acting as a powerful regulariser against <strong>overfitting</strong>.</div>
+              </div>
+              <div class="php-section">
+                <div class="php-label">In your model</div>
+                <div class="php-dyn" id="phpDyn-aug"></div>
+              </div>
+              <div class="php-section">
+                <div class="php-label">In comparison</div>
+                <div>No augmentation (1×): fine for huge datasets. Moderate (5–10×): standard for small image classifiers. Heavy (50–100×): used in medical imaging with tiny annotated sets. Large-scale models like GPT-4 don't need augmentation — their training corpus is already billions of diverse examples.</div>
+              </div>
+            </div>
+            <button class="btn btn-secondary btn-sm param-next-btn" onclick="_nextParamFrom(this.closest('.hyper-group').id)">Next →</button>
           </div>
 
           <!-- Batch size (image only) -->
           <div class="hyper-group" id="batchGroup">
-            <div class="hyper-label">Batch Size (Group Size)</div>
+            <div class="hyper-label">
+              <span>Batch Size <button class="param-help-btn" onclick="_toggleParamHelp(this)" title="More info">?</button></span>
+            </div>
             <div class="chip-row">
               <button class="chip"        onclick="setChip(this,'batch','4');updateBatchViz(4)">4</button>
               <button class="chip active" onclick="setChip(this,'batch','8');updateBatchViz(8)">8</button>
@@ -996,7 +1218,22 @@
               <button class="chip"        onclick="setChip(this,'batch','32');updateBatchViz(32)">32</button>
             </div>
             <div class="param-viz" id="batchViz"></div>
-            <div class="hyper-hint">How many images the AI studies at the exact same time before it pauses to update what it just learned.</div>
+            <div class="hyper-hint">How many examples processed before each weight update.</div>
+            <div class="param-help-panel hidden">
+              <div class="php-section">
+                <div class="php-label">What it is</div>
+                <div><strong>Batch size</strong> is how many images are processed before one <strong>gradient descent</strong> step. Small batches (4–8) produce noisier but more frequent updates — this noise acts as implicit regularisation and helps escape shallow minima. Large batches (16–32) give smoother gradients and faster GPU throughput, but can overfit quickly on tiny datasets.</div>
+              </div>
+              <div class="php-section">
+                <div class="php-label">In your model</div>
+                <div class="php-dyn" id="phpDyn-batch"></div>
+              </div>
+              <div class="php-section">
+                <div class="php-label">In comparison</div>
+                <div>Debugging: batch 1–4. Common practice: 32–128. Large-scale vision models (ResNet, ViT): 256–4,096. GPT-4 pretraining: millions of tokens per step across thousands of GPUs. The live image grid shows exactly your batch size of generated samples each epoch.</div>
+              </div>
+            </div>
+            <button class="btn btn-secondary btn-sm param-next-btn" onclick="_nextParamFrom(this.closest('.hyper-group').id)">Next →</button>
           </div>
 
           <!-- Smart Prompt info (shown only when smart_prompt selected) -->
@@ -1018,6 +1255,19 @@
 
         </div><!-- /row2-grid -->
 
+        <!-- Learning curve — full width, above preview -->
+        <div id="lossCurveWrap" style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;background:var(--card-bg);border:1.5px solid var(--border);border-radius:14px;padding:12px 16px;">
+          <div class="loss-row">
+            <span class="loss-label">Learning curve</span>
+            <span class="loss-val" id="lossVal">—</span>
+          </div>
+          <canvas id="lossCanvas" style="height:60px;"></canvas>
+          <div class="curve-explain" id="curveExplain">
+            <span class="curve-status" id="curveStatus">Waiting to train…</span>
+            — the line shows how confused your model is. <strong>Lower = better.</strong> Watch it fall as your model learns!
+          </div>
+        </div>
+
         <!-- ROW 3: Live Preview + Training Stats -->
         <div class="row3-grid">
 
@@ -1029,8 +1279,12 @@
           <div id="imgPreviewWrap">
             <div class="preview-frame">
               <div class="preview-ph" id="prevPH">Train your model to see generated images here ✨</div>
+              <!-- prevGrid: live per-epoch preview, exactly batch_size cells -->
+              <div id="prevGrid" class="hidden"></div>
+              <!-- prevImg: final done-event grid (16 samples) -->
               <img id="prevImg" class="hidden" src="" alt="preview">
             </div>
+            <div id="imgTrainCaption" class="hidden" style="font-size:.82rem;color:var(--primary-dark);font-weight:600;text-align:center;padding:6px 4px;line-height:1.4;background:var(--primary-lite);border-radius:0 0 10px 10px;border:1px solid var(--primary-mid);border-top:none;"></div>
           </div>
 
           <!-- Text preview -->
@@ -1081,90 +1335,10 @@
 
         </div>
 
-        <div class="stats-sidebar" id="statsSidebar">
-          <div id="lossCurveWrap" style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
-            <div class="loss-row">
-              <span class="loss-label">Learning curve</span>
-              <span class="loss-val" id="lossVal">—</span>
-            </div>
-            <canvas id="lossCanvas"></canvas>
-            <div class="curve-explain" id="curveExplain">
-              <span class="curve-status" id="curveStatus">Waiting to train…</span>
-              — the line shows how confused your model is. <strong>Lower = better.</strong> Watch it fall as your model learns!
-            </div>
-          </div>
-
-          <div id="compareCard" class="hidden" style="flex-shrink:0;">
-            <div class="panel-title" style="margin-bottom:6px;">📊 Your Model vs Big AI</div>
-            <div style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;">
-
-              <div class="cmp-section">
-                <div class="cmp-sh">🧠 Brain size</div>
-                <div class="cmp-stat" id="cmpBrainStat">—</div>
-                <div class="cmp-xfer" id="cmpBrainXfer">—</div>
-              </div>
-
-              <div class="cmp-section">
-                <div class="cmp-sh">📚 Examples studied</div>
-                <div class="cmp-stat" id="cmpStudyStat">—</div>
-                <div class="cmp-xfer" id="cmpStudyXfer">—</div>
-              </div>
-
-              <div class="cmp-section">
-                <div class="cmp-sh">⏱️ Time training</div>
-                <div class="cmp-stat" id="cmpPracStat">—</div>
-              </div>
-
-              <div class="cmp-section" style="border-bottom:none;">
-                <div class="cmp-sh">⚡ Energy used</div>
-                <div class="cmp-stat" id="cmpEnergyStat">—</div>
-                <div class="cmp-xfer" id="cmpEnergyXfer">—</div>
-              </div>
-
-              <div style="background:var(--primary-sel);padding:10px 14px;">
-                <div style="font-size:.95rem;color:var(--primary-dark);line-height:1.55;" id="cmpSummary">—</div>
-              </div>
-            </div>
-          </div>
-
-          <div id="smartExplainCard" class="hidden" style="flex-shrink:0;">
-            <div class="panel-title" style="margin-bottom:6px;">🎯 What you just did — REAL ML</div>
-            <div style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;">
-              <div class="cmp-section">
-                <div class="cmp-sh">📥 You gave examples</div>
-                <div class="cmp-stat" id="seExamples">—</div>
-              </div>
-              <div class="cmp-section">
-                <div class="cmp-sh">🔢 ML turned them into vectors</div>
-                <div class="cmp-stat">An ML model called <strong>all-MiniLM-L6-v2</strong> (already trained on millions of texts) converted each example into a list of <strong>384 numbers</strong> — called an <strong>embedding</strong> — that captures its meaning mathematically.</div>
-              </div>
-              <div class="cmp-section">
-                <div class="cmp-sh">🗺️ Similar meanings sit close together</div>
-                <div class="cmp-stat">Examples about similar topics land nearby in the map above. When you ask for something new, the bot measures distance in this map using <strong>cosine similarity</strong> — that's the real ML happening.</div>
-              </div>
-              <div class="cmp-section">
-                <div class="cmp-sh">✏️ Best matches guide LLaVA</div>
-                <div class="cmp-stat">The closest examples + your prompt are sent to <strong>LLaVA</strong> running on your computer via Ollama. It generates output in that style. This is called <strong>RAG — Retrieval-Augmented Generation</strong>.</div>
-              </div>
-              <div class="cmp-section" style="border-bottom:none;">
-                <div class="cmp-sh">🏭 RAG is how real AI products work</div>
-                <div class="cmp-blist">
-                  <div>• ChatGPT looking up your conversation history</div>
-                  <div>• Customer-support bots searching company docs</div>
-                  <div>• Coding assistants searching your codebase</div>
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">
-                  <div style="background:#dcfce7;border-radius:8px;padding:6px 8px;font-size:.71rem;color:#166534;line-height:1.5;">✓ Works with very few examples<br>✓ Instant — no training wait<br>✓ Real ML embeddings</div>
-                  <div style="background:#fef2f2;border-radius:8px;padding:6px 8px;font-size:.71rem;color:#991b1b;line-height:1.5;">✗ Limited by LLaVA's knowledge<br>✗ Needs Ollama running<br>✗ Style may not perfectly match</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         </div><!-- /row3-grid -->
 
-      </div>
+
+      </div><!-- /train-layout -->
     </div>
 
     <!-- ══════════════════════════════════════════════════
@@ -1175,6 +1349,61 @@
         <button class="brain-tab" id="brain-tab-train-b" onclick="goTo(1)">🏋️ <span class="tab-label">Train</span></button>
         <button class="brain-tab active" id="brain-tab-test-b" onclick="goTo(2)">🧪 <span class="tab-label">Test</span></button>
         <button class="brain-tab" id="brain-tab-save-b" onclick="goTo(5)">💾 <span class="tab-label">Save</span></button>
+      </div>
+
+      <!-- ── Training Comparison (shown when 2+ complete sessions exist) ── -->
+      <div id="comparisonSection" class="hidden" style="margin-bottom:16px;">
+        <div class="panel-title" style="margin-bottom:8px;">📊 Training Comparison</div>
+        <!-- Auto-comparison narrative (image mode only) -->
+        <div id="cmpNarrativeWrap" class="hidden cmp-narrative"></div>
+        <div style="background:var(--card-bg);border:1.5px solid var(--border);border-radius:14px;padding:12px 14px;">
+          <!-- Loss curve overlay -->
+          <div style="font-size:.78rem;font-weight:700;margin-bottom:5px;">Learning curves</div>
+          <canvas id="cmpLossCanvas" style="width:100%;height:120px;border-radius:8px;display:block;background:var(--card);"></canvas>
+          <div class="cmp-loss-legend" id="cmpLossLegend"></div>
+        </div>
+        <!-- Sample outputs per session -->
+        <div id="cmpSamplesGrid" class="cmp-samples-grid" style="margin-top:10px;"></div>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:6px;line-height:1.4;">
+          Shows the final training preview from each run. Run more trainings to compare them.
+        </div>
+      </div>
+
+      <!-- ── Per-epoch sample evolution ── -->
+      <div id="epochEvoWrap" class="hidden" style="margin-bottom:16px;">
+        <div class="panel-title" style="margin-bottom:8px;">🎬 Learning Over Time</div>
+        <!-- Image: strip of preview snapshots -->
+        <div id="evoImgStrip" class="hidden" style="display:flex;gap:4px;overflow-x:auto;padding-bottom:4px;background:var(--card-bg);border:1.5px solid var(--border);border-radius:12px;padding:10px;"></div>
+        <!-- Text: stack of samples at key epochs -->
+        <div id="evoTextStack" class="hidden" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;"></div>
+        <!-- Classifier: accuracy timeline canvas -->
+        <div id="evoAccTimeline" class="hidden" style="background:var(--card-bg);border:1.5px solid var(--border);border-radius:12px;padding:10px;">
+          <canvas id="evoAccCanvas" style="width:100%;height:64px;border-radius:6px;display:block;"></canvas>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:5px;">Accuracy % per epoch — watch the model improve</div>
+        </div>
+      </div>
+
+      <!-- ── Confusion matrix + Embedding scatter ── -->
+      <div id="viz23Wrap" class="hidden" style="margin-bottom:16px;">
+        <div id="viz23Inner" style="display:grid;gap:12px;">
+          <!-- Confusion heatmap (classifiers only) -->
+          <div id="testConfWrap" class="hidden">
+            <div class="panel-title" style="margin-bottom:8px;">🟩 Confusion Matrix</div>
+            <div style="background:var(--card-bg);border:1.5px solid var(--border);border-radius:14px;padding:12px;">
+              <svg id="confHeatmapSvg" style="width:100%;overflow:visible;display:block;"></svg>
+              <div style="font-size:.72rem;color:var(--muted);margin-top:6px;line-height:1.4;">Rows = actual label, columns = predicted. Green diagonal = correct. Red off-diagonal = mistakes.</div>
+            </div>
+          </div>
+          <!-- Embedding scatter (classifier only) -->
+          <div id="embScatterWrap" class="hidden">
+            <div class="panel-title" style="margin-bottom:8px;">🗺️ Latent Space</div>
+            <div style="background:var(--card-bg);border:1.5px solid var(--border);border-radius:14px;padding:12px;">
+              <svg id="embScatterSvg" style="width:100%;aspect-ratio:1;overflow:visible;display:block;"></svg>
+              <div id="embScatterLegend" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:7px;"></div>
+              <div style="font-size:.72rem;color:var(--muted);margin-top:5px;line-height:1.4;">Examples colored by class. Tighter clusters = the model is more confident about each class.</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="test-layout">
@@ -1208,7 +1437,8 @@
 
             <!-- Latent walk -->
             <div id="interpWrap" class="hidden">
-              <div class="panel-title" style="margin-top:14px;margin-bottom:5px;">Latent Space Walk</div>
+              <div class="panel-title" style="margin-top:14px;margin-bottom:2px;">Latent Space Walk</div>
+              <div style="font-size:.78rem;color:var(--muted);margin-bottom:6px;line-height:1.4;">The model's internal creative map — each frame is a smooth step between two random points in the space of all patterns it has learned. Gradual changes = the model has learned smooth, meaningful structure.</div>
               <img id="interpStrip" class="interp-strip" src="" alt="interpolation">
             </div>
           </div>
@@ -1253,7 +1483,7 @@
           <div id="imgTestCtrl">
             <div class="fact-box" style="margin-bottom:10px;">
               <div class="fact-label">ℹ️ How this works</div>
-              <div class="fact-text">This model invents images from a learned creative space — it doesn't take text prompts.</div>
+              <div class="fact-text">This VAE (Variational Autoencoder) learned to encode your images into a compact latent space and decode them back. It generates new images by sampling points in that space — like exploring the creative territory between your training images. It doesn't take text prompts.</div>
             </div>
 
             <!-- Single mode (default) -->
@@ -1324,6 +1554,35 @@
 
         </div>
       </div>
+
+      <!-- ── Training Insights (populated after training, shown on Test page) ── -->
+      <div id="trainingInsightsWrap" class="hidden" style="margin-top:18px;border-top:1.5px solid var(--border);padding-top:14px;">
+        <div class="panel-title" style="margin-bottom:10px;">📊 Training Insights</div>
+
+        <!-- Vocabulary (text scratch only) -->
+        <div id="tiVocabWrap" class="hidden" style="margin-bottom:14px;background:var(--card-bg);border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;">
+          <div style="font-size:.88rem;font-weight:700;margin-bottom:3px;">📖 Vocabulary learned</div>
+          <div id="tiVocabStat" style="font-size:1.1rem;font-weight:800;color:var(--primary);margin-bottom:3px;">—</div>
+          <div style="font-size:.78rem;color:var(--muted);line-height:1.4;"><strong>Vocabulary</strong> = all the unique words/tokens the model has seen and can use. Larger vocabularies allow more expressive text.</div>
+        </div>
+
+        <!-- RAG top-5 retrieved (smart_prompt only, updated on each query) -->
+        <div id="tiRagWrap" class="hidden" style="margin-bottom:14px;">
+          <div style="font-size:.88rem;font-weight:700;margin-bottom:6px;">🔍 Top examples retrieved for last query</div>
+          <div style="font-size:.78rem;color:var(--muted);margin-bottom:6px;line-height:1.4;"><strong>Embeddings</strong> = lists of numbers capturing meaning. The model finds examples whose number-lists are closest to your query (measured by cosine similarity). Higher % = more similar meaning.</div>
+          <div id="tiRagList" style="display:flex;flex-direction:column;gap:5px;">
+            <div style="font-size:.82rem;color:var(--muted);">Send a message above to see which examples are retrieved.</div>
+          </div>
+        </div>
+
+        <!-- Image: latent space info (image only) -->
+        <div id="tiImageWrap" class="hidden" style="margin-bottom:14px;background:var(--card-bg);border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;">
+          <div style="font-size:.88rem;font-weight:700;margin-bottom:3px;">🗺️ What the model learned</div>
+          <div id="tiImageStat" style="font-size:.88rem;color:var(--text);line-height:1.55;">—</div>
+          <button class="btn btn-secondary btn-sm" onclick="exploreLatent()" style="margin-top:8px;">🔀 Explore latent space</button>
+          <div style="font-size:.78rem;color:var(--muted);margin-top:5px;line-height:1.4;"><strong>Latent space</strong> = the model's internal map of all patterns it has learned. Points nearby in this space produce similar-looking images.</div>
+        </div>
+      </div><!-- /trainingInsightsWrap -->
     </div>
 
     <!-- ══════════════════════════════════════════════════
@@ -1564,7 +1823,7 @@
       </div>
 
       <!-- Save UI -->
-      <div style="max-width:500px;margin:32px auto 0;display:flex;flex-direction:column;gap:16px;align-items:center;text-align:center;">
+      <div style="max-width:500px;margin:16px auto 0;display:flex;flex-direction:column;gap:16px;align-items:center;text-align:center;">
         <div style="font-size:3rem;">🧠</div>
         <div style="font-size:1.5rem;font-weight:800;letter-spacing:-.03em;">Save Brain to Library</div>
         <div style="font-size:.95rem;color:var(--muted);line-height:1.6;max-width:380px;">
@@ -1597,6 +1856,70 @@
     </div><!-- step-5 -->
 
   </div><!-- card-body -->
+
+  <!-- ── Persistent Brain sidebar (shown on Train / Test / Save tabs) ── -->
+  <div class="stats-sidebar hidden-sidebar" id="statsSidebar">
+    <!-- Training Activity feed -->
+    <div id="trainActivitySection" style="flex-shrink:0;">
+      <div style="font-size:.68rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid var(--border);">Training Activity</div>
+      <div id="brainMsgListTrain" style="overflow-y:auto;"></div>
+    </div>
+
+    <div id="compareCard" style="flex-shrink:0;border-top:1px solid var(--border);padding-top:10px;margin-top:4px;">
+      <div class="panel-title" style="margin-bottom:6px;">📊 Your Model vs Big AI</div>
+      <div style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;">
+        <div class="cmp-section">
+          <div class="cmp-sh">🧠 Brain size</div>
+          <div class="cmp-stat" id="cmpBrainStat">—</div>
+          <div class="cmp-xfer" id="cmpBrainXfer" style="display:none;">—</div>
+        </div>
+        <div class="cmp-section">
+          <div class="cmp-sh">📚 Examples studied</div>
+          <div class="cmp-stat" id="cmpStudyStat">—</div>
+          <div class="cmp-xfer" id="cmpStudyXfer" style="display:none;">—</div>
+        </div>
+        <div class="cmp-section">
+          <div class="cmp-sh">⏱️ Time training</div>
+          <div class="cmp-stat" id="cmpPracStat">—</div>
+        </div>
+        <div class="cmp-section" style="border-bottom:none;">
+          <div class="cmp-sh">⚡ Energy used</div>
+          <div class="cmp-stat" id="cmpEnergyStat">—</div>
+          <div class="cmp-xfer" id="cmpEnergyXfer" style="display:none;">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="smartExplainCard" class="hidden" style="flex-shrink:0;">
+      <div class="panel-title" style="margin-bottom:6px;">🎯 What you just did — REAL ML</div>
+      <div style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;">
+        <div class="cmp-section">
+          <div class="cmp-sh">📥 You gave examples</div>
+          <div class="cmp-stat" id="seExamples">—</div>
+        </div>
+        <div class="cmp-section">
+          <div class="cmp-sh">🔢 ML turned them into vectors</div>
+          <div class="cmp-stat">An ML model called <strong>all-MiniLM-L6-v2</strong> converted each example into a list of <strong>384 numbers</strong> — an <strong>embedding</strong> — capturing its meaning mathematically.</div>
+        </div>
+        <div class="cmp-section">
+          <div class="cmp-sh">🗺️ Similar meanings sit close together</div>
+          <div class="cmp-stat">Examples about similar topics land nearby in the map. When you ask something new, the bot measures distance using <strong>cosine similarity</strong>.</div>
+        </div>
+        <div class="cmp-section">
+          <div class="cmp-sh">✏️ Best matches guide LLaVA</div>
+          <div class="cmp-stat">The closest examples + your prompt are sent to <strong>LLaVA</strong> via Ollama. This is <strong>RAG — Retrieval-Augmented Generation</strong>.</div>
+        </div>
+        <div class="cmp-section" style="border-bottom:none;">
+          <div class="cmp-sh">🏭 RAG is how real AI products work</div>
+          <div class="cmp-blist">
+            <div>• ChatGPT looking up your conversation history</div>
+            <div>• Customer-support bots searching company docs</div>
+            <div>• Coding assistants searching your codebase</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /statsSidebar -->
 
   <!-- ── Full-page library overlay ─────────────────────────── -->
   <div id="libraryOverlay" class="lib-overlay hidden">
@@ -1679,12 +2002,19 @@ let _lossHist = [];
 let _accHist  = [];    // classifier accuracy history
 let _es       = null;  // EventSource
 let _chips    = { lr: 'steady', batch: '8', n: '16' };
-let _nParams  = 0, _nData = 0, _trainedEpochs = 0, _finalLoss = null;
+let _nParams  = 0, _nData = 0, _trainedEpochs = 0, _finalLoss = null, _nVocab = 0;
 let _finalAccuracy = null;
 let _gotStartEvent = false;
 let _smartAvailable = null;   // null = not yet checked, true/false after fetch
 let _smartVizData   = [];     // [{x,y,text,idx}] from last prepare
 let _smartHighlights = [];
+
+// Visualization state (populated after training, rendered on Test tab)
+let _epochSnapshots = [];   // [{epoch, preview?} | {epoch, sample?}]
+let _confMatrix     = null;
+let _confLabels     = [];
+let _pcaPoints      = [];   // [[x,y], ...]
+let _pcaLabels      = [];   // [str, ...]
 
 const LR_MAP          = { fast: 0.01, steady: 0.001, careful: 0.0002 };
 const LR_MAP_FINETUNE = { fast: 1e-4, steady: 5e-5, careful: 1e-5 };
@@ -1705,6 +2035,7 @@ let _clfColors  = ['#6366f1','#f59e0b','#10b981','#ef4444','#3b82f6','#8b5cf6','
 let _clfActive  = null; // which label file-picker is targeting
 let _txtItems      = [];
 let _imgThumbs     = [];
+let _imgDataUrls   = [];   // full base64 originals, kept for fork re-upload
 let _loadedModelId = null;  // ID of brain loaded from Library — used to overwrite on re-save
 
 const _EMOJI_TYPE = {
@@ -1910,6 +2241,13 @@ function _render() {
   if (_step === 2) _fillTestInfo();
   if (_step === 3) _fillBotSummary();
   _syncSetupFlow();
+
+  // Persistent sidebar — visible on all Brain sub-tabs
+  const onBrain = _step === 1 || _step === 2 || _step === 5;
+  document.querySelector('.card-body')?.classList.toggle('brain-active', onBrain);
+  const sidebar = document.getElementById('statsSidebar');
+  if (sidebar) sidebar.classList.toggle('hidden-sidebar', !onBrain);
+  if (onBrain && _tsSessions.length === 0) _tsNewSession();
 }
 
 // ── Mode ───────────────────────────────────────────────────────────────────────
@@ -1984,9 +2322,11 @@ function _syncSetupFlow() {
 
   dataCol?.classList.toggle('hidden', !onTrain || _setupStage < 2);
   paramsCol?.classList.toggle('hidden', !onTrain || _setupStage < 3);
-  // Row 3 (preview + stats sidebar) appears only once training has started
+  // Row 3 (preview) + loss curve appear only once training has started
   if (row3) row3.classList.toggle('hidden', !onTrain || _setupStage < 4);
   previewCol?.classList.toggle('hidden', !onTrain || _setupStage < 4);
+  const lossWrap = document.getElementById('lossCurveWrap');
+  if (lossWrap) lossWrap.classList.toggle('hidden', !onTrain || _setupStage < 4);
 
   const toParamsBtn = document.getElementById('toParamsBtn');
   if (toParamsBtn) {
@@ -2009,12 +2349,17 @@ function _syncSetupFlow() {
   _syncParamProgress(onTrain);
   const trainBtn = document.getElementById('trainBtn');
   if (trainBtn) {
-    const blocked = onTrain && (_setupStage < 3 || !_allParamsRevealed());
-    trainBtn.disabled = blocked;
-    if (!onTrain) trainBtn.removeAttribute('title');
-    else if (_setupStage < 3) trainBtn.title = 'Finish setup steps first';
-    else if (!_allParamsRevealed()) trainBtn.title = 'Finish each parameter (or click Next) first';
-    else trainBtn.removeAttribute('title');
+    // Hide (not just disable) Train button until all params have been stepped through with Next →
+    const hideBtn = onTrain && _setupStage >= 3 && !_allParamsRevealed();
+    const trainWasHidden = trainBtn.classList.contains('hidden');
+    trainBtn.classList.toggle('hidden', hideBtn);
+    trainBtn.disabled = false;
+    if (!hideBtn && trainWasHidden && onTrain) {
+      // Fade in the Train button when it's first revealed by the last Next →
+      trainBtn.classList.add('param-fadein');
+      setTimeout(() => trainBtn.classList.remove('param-fadein'), 250);
+    }
+    trainBtn.removeAttribute('title');
   }
 }
 
@@ -2062,9 +2407,15 @@ function _applyParamProgress(onTrain) {
     const el = document.getElementById(id);
     if (!el) return;
     const show = active && idx < _paramRevealCount;
+    const wasHidden = el.classList.contains('hidden');
     el.classList.toggle('hidden', !show);
+    if (wasHidden && show) {
+      el.classList.add('param-fadein');
+      setTimeout(() => el.classList.remove('param-fadein'), 250);
+    }
+    // Show the Next button on every visible group; it has no effect once already advanced past
     const nextBtn = el.querySelector('.param-next-btn');
-    if (nextBtn) nextBtn.classList.toggle('hidden', !show || idx >= order.length - 1);
+    if (nextBtn) nextBtn.classList.toggle('hidden', !show);
   });
 }
 
@@ -2084,6 +2435,101 @@ function _nextParamFrom(groupId) {
   _touchParam(groupId);
 }
 
+function _toggleParamHelp(btn) {
+  const group = btn.closest('.hyper-group');
+  const panel = group?.querySelector('.param-help-panel');
+  if (!panel) return;
+
+  const willShow = panel.classList.contains('hidden');
+  if (willShow) _fillParamHelpDynamic(group.id);
+  panel.classList.toggle('hidden');
+}
+
+function _fillParamHelpDynamic(groupId) {
+  const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+
+  if (groupId === 'epochsGroup') {
+    const ep = +document.getElementById('epochsSlider').value;
+    const n  = _nData || '?';
+    const total = (typeof _nData === 'number' && _nData > 0)
+      ? `That's <strong>${(ep * _nData).toLocaleString()}</strong> individual weight updates in total.`
+      : 'Add data to see total update count.';
+    set('phpDyn-epochs',
+      `You've set <strong>${ep} epochs</strong> with <strong>${n} examples</strong>. ` + total +
+      ` ${ep < 30 ? 'This is on the low side — the model may underfit if your data is complex.'
+         : ep > 120 ? 'High epoch count — watch for overfitting on small datasets.'
+         : 'A solid middle ground for most small datasets.'}`);
+  }
+
+  if (groupId === 'lrGroup') {
+    const lr = _chips.lr || 'steady';
+    const lrMap = { fast: '0.01', steady: '0.001', careful: '0.0001' };
+    const desc = {
+      fast:    'Large steps — converges quickly but can overshoot and produce unstable loss.',
+      steady:  'The reliable default — balances speed and stability for most tasks.',
+      careful: 'Tiny steps — more stable, but needs more epochs to converge.',
+    };
+    set('phpDyn-lr',
+      `You've selected <strong>${lr.charAt(0).toUpperCase()+lr.slice(1)}</strong> ` +
+      `(α = ${lrMap[lr] || '0.001'}). ${desc[lr] || ''}`);
+  }
+
+  if (groupId === 'latentGroup') {
+    const ld = +document.getElementById('latentSlider').value;
+    const quality = ld <= 64 ? 'compact — good for simple or very small image sets'
+      : ld <= 128 ? 'moderate — a good balance of detail and speed'
+      : 'rich — captures complex visual patterns; slower to train';
+    set('phpDyn-latent',
+      `Your latent dimension is <strong>${ld}</strong>. ` +
+      `The encoder squeezes each 96×96 image down to a vector of ${ld} numbers before the decoder reconstructs it. ` +
+      `At ${ld}, the representation is ${quality}.`);
+  }
+
+  if (groupId === 'scratchParams') {
+    const w = +document.getElementById('winSlider').value;
+    const approxWords = Math.round(w * 0.75);
+    set('phpDyn-win',
+      `Your window is <strong>${w} tokens</strong> ≈ <strong>${approxWords} words</strong>. ` +
+      `The LSTM processes ${w} subword tokens at a time. ` +
+      `${w <= 25 ? 'Short window — fine for brief sentences but may miss paragraph-level patterns.'
+         : w >= 50 ? 'Long window — good for capturing multi-sentence structure.'
+         : 'Mid-range — works well for most short-to-medium texts.'}`);
+  }
+
+  if (groupId === 'finetuneParams') {
+    const bs = _chips.txtBatch || '4';
+    const n  = _nData || '?';
+    set('phpDyn-txtBatch',
+      `Batch size <strong>${bs}</strong> with <strong>${n} text examples</strong>. ` +
+      `Fine-tuning DistilGPT-2 (~82M parameters) — ` +
+      `${+bs <= 2 ? 'very small batch, maximum regularisation effect'
+         : +bs >= 8 ? 'larger batch, smoother gradients but higher memory use'
+         : 'standard size for fine-tuning on CPU/small GPU'}.`);
+  }
+
+  if (groupId === 'augGroup') {
+    const aug  = +document.getElementById('augSlider').value;
+    const n    = _nData || '?';
+    const eff  = (typeof _nData === 'number' && _nData > 0)
+      ? `With ${n} images and ${aug}× augmentation, the model sees up to <strong>${Math.min(aug, 8) * _nData}</strong> variants per epoch (internally capped at 8×).`
+      : `Internally capped at 8× per epoch regardless of slider value.`;
+    set('phpDyn-aug', eff + ` Transforms applied: horizontal flip, ±10° rotation, brightness/contrast jitter.`);
+  }
+
+  if (groupId === 'batchGroup') {
+    const bs = _chips.batch || '8';
+    const n  = _nData || '?';
+    const stepsPerEpoch = (typeof _nData === 'number' && _nData > 0)
+      ? `≈ <strong>${Math.max(1, Math.ceil(_nData / +bs))}</strong> gradient steps per epoch`
+      : 'gradient steps per epoch depend on your data size';
+    set('phpDyn-batch',
+      `Batch size <strong>${bs}</strong> with <strong>${n} images</strong> → ${stepsPerEpoch}. ` +
+      `${+bs <= 4 ? 'Small batch — noisier updates, stronger regularisation effect.'
+         : +bs >= 16 ? 'Larger batch — smoother gradients, but watch for overfitting.'
+         : 'Good default for small image datasets.'}`);
+  }
+}
+
 function _resetModeDraftState(nextCard = null) {
   _trained = false;
   _lossHist = [];
@@ -2091,8 +2537,10 @@ function _resetModeDraftState(nextCard = null) {
   _finalLoss = null;
   _finalAccuracy = null;
   _nData = 0;
+  _tsReset();
   _trainedEpochs = 0;
-  _imgThumbs = [];
+  _resetVizState();
+  _imgThumbs = []; _imgDataUrls = [];
   _txtItems = [];
   _clfLabels = [];
   _clfCounts = {};
@@ -2162,6 +2610,12 @@ function _applyMode() {
     : '• Each new line is one data entry.<br>• Garbage in, garbage out: better quality text creates better results.';
   _updateCountBadge();
 
+  // Step labels: image mode skips Step 1 (no method picker), so relabel to start at 1
+  const dataTitle   = document.getElementById('dataStepTitle');
+  const paramsTitle = document.getElementById('paramsStepTitle');
+  if (dataTitle)   dataTitle.textContent   = img ? 'Step 1 · Your Data'   : 'Step 2 · Your Data';
+  if (paramsTitle) paramsTitle.textContent = img ? 'Step 2 · Parameters'  : 'Step 3 · Parameters';
+
   // Test step
   document.getElementById('imgTestWrap').classList.toggle('hidden', !img);
   document.getElementById('txtTestWrap').classList.toggle('hidden', !txt);
@@ -2175,8 +2629,10 @@ function _applyMode() {
 function startOver() {
   _mode = null; _trained = false; _lossHist = []; _accHist = []; _gotStartEvent = false;
   _smartVizData = []; _smartHighlights = [];
+  _resetVizState();
   _clfTrainingMode = null;
-  _nParams = 0; _nData = 0; _trainedEpochs = 0; _finalLoss = null; _finalAccuracy = null;
+  _nParams = 0; _nData = 0; _trainedEpochs = 0; _finalLoss = null; _finalAccuracy = null; _nVocab = 0;
+  _tsReset();
   _clfLabels = []; _clfCounts = {}; _clfThumbs = {}; _clfActive = null;
   _bBotId = null; _bBotName = 'My Bot'; _bBotEmoji = '🤖';
   _bInputs = []; _bBrain = null; _bOutputs = []; _bRules = [];
@@ -2185,7 +2641,7 @@ function startOver() {
   _paramRevealCount = 1;
   _paramRevealKey = '';
   _txtItems = [];
-  _imgThumbs = [];
+  _imgThumbs = []; _imgDataUrls = [];
   _loadedModelId = null;
   ['image','text','clf-image','clf-text'].forEach(m =>
     document.getElementById('mode-' + m)?.classList.remove('selected'));
@@ -2219,6 +2675,7 @@ async function _uploadImg(dataUrl) {
   _nData = d.count;
   _updateCountBadge();
   _imgThumbs.push('data:image/png;base64,' + d.thumb);
+  _imgDataUrls.push(dataUrl);
   _renderImgThumbs();
   _syncSetupFlow();
 }
@@ -2258,6 +2715,7 @@ function _updateCountBadge() {
              : _mode === 'text' ? 'text entry'
              : 'item';
   document.getElementById('countBadge').textContent = `${_nData} ${unit}${_nData !== 1 ? 's' : ''} uploaded`;
+  _tsUpdateUploads();
   if (_mode === 'text' && _textTrainingMode === 'smart_prompt' && _nData > 0) {
     const vs = document.getElementById('smartVizStatus');
     const se = document.getElementById('seExamples');
@@ -2303,6 +2761,7 @@ async function removeUploadedData(idx) {
   if (!d.ok) return;
   if (_mode === 'image') {
     _imgThumbs.splice(idx, 1);
+    _imgDataUrls.splice(idx, 1);
     _renderImgThumbs();
   } else if (_mode === 'text') {
     _txtItems.splice(idx, 1);
@@ -2553,7 +3012,7 @@ async function clearData() {
   await fetch('/api/clear', { method: 'POST' });
   _nData = 0; _updateCountBadge();
   _txtItems = [];
-  _imgThumbs = [];
+  _imgThumbs = []; _imgDataUrls = [];
   _loadedModelId = null;
   _renderImgThumbs();
   _renderTxtList();
@@ -2567,6 +3026,9 @@ async function clearData() {
 
 function _resetPreview() {
   document.getElementById('prevImg').classList.add('hidden');
+  const prevGrid = document.getElementById('prevGrid');
+  prevGrid.classList.add('hidden');
+  prevGrid.innerHTML = '';
   document.getElementById('prevPH').classList.remove('hidden');
   document.getElementById('txtSampleBox').textContent = 'Train your model to see generated text here ✨';
   document.getElementById('txtSampleBox').classList.remove('has-text');
@@ -2575,7 +3037,6 @@ function _resetPreview() {
   document.getElementById('lossVal').textContent   = '—';
   document.getElementById('accVal').textContent    = '—';
   document.getElementById('stageDots').innerHTML   = '';
-  document.getElementById('lossCurveWrap').classList.remove('hidden');
   document.getElementById('progRow').classList.remove('hidden');
   document.getElementById('confMatrixWrap').classList.add('hidden');
   document.getElementById('smartVizWrap').classList.add('hidden');
@@ -2593,8 +3054,6 @@ function setChip(btn, group, val) {
   _chips[group] = val;
   btn.closest('.chip-row').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
   btn.classList.add('active');
-  const grp = btn.closest('.hyper-group');
-  if (grp?.id) _touchParam(grp.id);
 }
 
 // ── Training ───────────────────────────────────────────────────────────────────
@@ -2606,9 +3065,9 @@ function startTraining() {
   _syncSetupFlow();
   if (_es) { _es.close(); _es = null; }
   _trained = false; _lossHist = []; _gotStartEvent = false; _smartVizData = []; _smartHighlights = [];
+  _resetVizState();
   _resetPreview();
   _trainStart = Date.now();
-  document.getElementById('compareCard')?.classList.add('hidden');
   document.getElementById('smartExplainCard')?.classList.add('hidden');
   document.getElementById('smartVizWrap')?.classList.add('hidden');
   const isSmart = _textTrainingMode === 'smart_prompt';
@@ -2619,13 +3078,14 @@ function startTraining() {
   const lr     = (_mode === 'text' && _textTrainingMode === 'finetune')
                    ? (LR_MAP_FINETUNE[_chips.lr] || 5e-5)
                    : (LR_MAP[_chips.lr] || 0.001);
+  _tsStartTraining();
   const params = new URLSearchParams({ epochs, lr });
 
   if (_mode === 'image') {
     params.set('batch_size',     _chips.batch || '8');
     params.set('latent_dim',     document.getElementById('latentSlider').value);
     params.set('augment_factor', document.getElementById('augSlider').value);
-    params.set('preview_every',  '5');
+    params.set('preview_every',  String(Math.max(1, Math.floor(epochs / 8))));
   } else if (_mode === 'classifier') {
     params.set('batch_size', _chips.batch || '8');
   } else if (_textTrainingMode === 'finetune') {
@@ -2662,6 +3122,7 @@ function startTraining() {
     _gotStartEvent = true;
     const d = JSON.parse(e.data);
     _nParams     = d.n_params || 0;
+    _nVocab      = d.vocab_size || 0;
     _trainDevice = d.device   || 'cpu';
     if (!isSmart) {
       _initDots(d.epochs || epochs);
@@ -2720,27 +3181,51 @@ function startTraining() {
     _armStall(nextMs);
 
     if (_mode === 'image' && d.preview) {
-      document.getElementById('prevImg').src = 'data:image/png;base64,' + d.preview;
-      document.getElementById('prevImg').classList.remove('hidden');
+      const batchN = d.preview_n || parseInt(_chips.batch || '8');
+      const cellSz = 64;   // IMAGE_SIZE in image_trainer.py
+      document.getElementById('prevGrid').classList.remove('hidden');
+      document.getElementById('prevImg').classList.add('hidden');
       document.getElementById('prevPH').classList.add('hidden');
+      _renderPreviewCells(d.preview, batchN, cellSz);
+      const cap = document.getElementById('imgTrainCaption');
+      if (cap) {
+        cap.classList.remove('hidden');
+        const ep = d.epoch || 0, tot = d.epochs || 1;
+        const frac = ep / tot;
+        cap.textContent = frac < 0.2
+          ? `Epoch ${ep} — The model is learning what colours and brightness are common in your images.`
+          : frac < 0.65
+          ? `Epoch ${ep} — The model is learning shapes and edges.`
+          : `Epoch ${ep} — The model is refining details.`;
+      }
     }
     if (_mode === 'text' && d.sample) {
       const box = document.getElementById('txtSampleBox');
       box.textContent = d.sample;
       box.classList.add('has-text');
     }
+
+    // Capture epoch snapshot for evolution visualization
+    if (_mode === 'image' && d.preview) {
+      _epochSnapshots.push({ epoch: d.epoch, preview: d.preview });
+    } else if (_mode === 'text' && d.sample) {
+      _epochSnapshots.push({ epoch: d.epoch, sample: d.sample });
+    }
   });
 
   _es.addEventListener('done', e => {
     const d = JSON.parse(e.data);
     _trained       = true;
-    _trainedEpochs = isSmart ? (d.n_examples || 0) : parseInt(document.getElementById('epochsSlider').value);
+    _trainedEpochs = isSmart ? (d.n_examples || 0) : _lossHist.length;
     _finalLoss     = _lossHist[_lossHist.length - 1] ?? null;
     _finalAccuracy = d.final_accuracy ?? (_accHist[_accHist.length - 1] ?? null);
     _nParams       = d.n_params || _nParams;
+    _nVocab        = d.vocab_size || _nVocab;
     _trainTimeMs   = Date.now() - _trainStart;
 
     if (_mode === 'image' && d.grid) {
+      // Switch from live cell grid to the final 16-sample summary grid
+      document.getElementById('prevGrid').classList.add('hidden');
       document.getElementById('prevImg').src = 'data:image/png;base64,' + d.grid;
       document.getElementById('prevImg').classList.remove('hidden');
       document.getElementById('prevPH').classList.add('hidden');
@@ -2755,6 +3240,15 @@ function startTraining() {
       document.getElementById('confMatrixWrap').classList.remove('hidden');
       if (d.final_accuracy != null)
         document.getElementById('accVal').textContent = d.final_accuracy.toFixed(1) + '%';
+      // Store for test-tab heatmap
+      _confMatrix = d.confusion_matrix;
+      _confLabels = d.labels;
+    }
+
+    // Store PCA data for test-tab embedding scatter
+    if (d.pca_points && d.pca_labels) {
+      _pcaPoints = d.pca_points;
+      _pcaLabels = d.pca_labels;
     }
 
     if (isSmart && d.viz_2d && d.viz_2d.length > 0) {
@@ -2778,6 +3272,10 @@ function startTraining() {
 
     _clearStall();
     _hideEta();
+    const _doneMetrics = (_mode === 'image' && (d.diversity != null || d.recon_errors))
+      ? { diversity: d.diversity ?? null, reconErrors: d.recon_errors ?? [] }
+      : null;
+    _tsComplete(_finalLoss, _trainTimeMs, d.budget_reached, d.actual_epochs, _doneMetrics);
     _cleanup();
     _render();
   });
@@ -2802,6 +3300,7 @@ function startTraining() {
     } catch {
       _showEta('⚠ Training stopped unexpectedly. Try again or check your data.', true);
     }
+    _tsError();
     _cleanup();
   });
 
@@ -2828,17 +3327,42 @@ function startTraining() {
     } else {
       _hideEta();
     }
+    _tsError();
     _cleanup();
   };
 }
 
-function stopTraining() { _cleanup(); }
+function stopTraining() { _tsError(); _cleanup(); }
 
 function _cleanup() {
   _clearStall();
   if (_es) { _es.close(); _es = null; }
   document.getElementById('trainBtn').classList.remove('hidden');
   document.getElementById('stopBtn').classList.add('hidden');
+}
+
+// ── Live preview grid (exactly batch_size cells sliced from backend PNG) ────────
+function _renderPreviewCells(b64, n, cellSize) {
+  const grid = document.getElementById('prevGrid');
+  const img  = new Image();
+  img.onload = () => {
+    grid.innerHTML = '';
+    const cols = Math.round(img.width / cellSize) || 1;
+    const rows = Math.ceil(n / cols);
+    // CSS grid fills the fixed-height parent; tiles auto-size to their cells
+    grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    grid.style.gridTemplateRows    = `repeat(${rows}, 1fr)`;
+    for (let i = 0; i < n; i++) {
+      const c   = document.createElement('canvas');
+      c.width   = cellSize;
+      c.height  = cellSize;
+      const ctx = c.getContext('2d');
+      const col = i % cols, row = Math.floor(i / cols);
+      ctx.drawImage(img, col * cellSize, row * cellSize, cellSize, cellSize, 0, 0, cellSize, cellSize);
+      grid.appendChild(c);
+    }
+  };
+  img.src = 'data:image/png;base64,' + b64;
 }
 
 // ── Stage dots ─────────────────────────────────────────────────────────────────
@@ -3113,11 +3637,418 @@ function _fmtParams(n) {
 
 function _fillTestInfo() {
   document.getElementById('modelInfoTxt').textContent =
-    `${_fmtParams(_nParams)} parameters · ${_nData} ${_mode === 'image' ? 'images' : 'texts'} · final loss ${_finalLoss ?? '—'}`;
+    `${_fmtParams(_nParams)} parameters · ${_nData} ${_mode === 'image' ? 'images' : 'texts'} · final loss ${_finalLoss != null ? Number(_finalLoss).toFixed(3) : '—'}`;
   const isSmart = _textTrainingMode === 'smart_prompt';
-  // Apply/remove full-width mode for Smart Prompt
   document.querySelectorAll('.step').forEach(s => s.classList.toggle('smart-mode', isSmart));
   document.getElementById('smartTrainedBadge')?.classList.toggle('hidden', !isSmart);
+  _fillTrainingInsights();
+  requestAnimationFrame(_fillComparisonSection);
+}
+
+function _fillTrainingInsights() {
+  const wrap = document.getElementById('trainingInsightsWrap');
+  if (!wrap) return;
+  wrap.classList.remove('hidden');
+
+  const isScratch = _mode === 'text' && _textTrainingMode === 'scratch';
+  const isSmart   = _mode === 'text' && _textTrainingMode === 'smart_prompt';
+  const isImage   = _mode === 'image';
+  const isClf     = _mode === 'classifier';
+
+  // Vocabulary — text scratch only
+  const vocabWrap = document.getElementById('tiVocabWrap');
+  if (vocabWrap) {
+    vocabWrap.classList.toggle('hidden', !isScratch);
+    if (isScratch) {
+      const stat = document.getElementById('tiVocabStat');
+      if (stat) stat.textContent = _nVocab > 0 ? `${_nVocab.toLocaleString()} unique words/tokens` : `${_nData} examples studied`;
+    }
+  }
+
+  // RAG top-5 — smart_prompt only (list updated on each chat)
+  const ragWrap = document.getElementById('tiRagWrap');
+  if (ragWrap) ragWrap.classList.toggle('hidden', !isSmart);
+
+  // Image stats
+  const imgWrap = document.getElementById('tiImageWrap');
+  if (imgWrap) {
+    imgWrap.classList.toggle('hidden', !isImage);
+    if (isImage) {
+      const stat = document.getElementById('tiImageStat');
+      if (stat) stat.innerHTML =
+        `Trained on <strong>${_nData} image${_nData !== 1 ? 's' : ''}</strong> for <strong>${_trainedEpochs} epochs</strong>. ` +
+        `Latent space has <strong>${_fmtParams(_nParams)} parameters</strong>. ` +
+        `Final reconstruction loss: <strong>${_finalLoss != null ? Number(_finalLoss).toFixed(3) : '—'}</strong> — lower means the model can recreate your images more faithfully.`;
+    }
+  }
+
+  // New visualizations
+  _renderEpochEvolution();
+  _renderViz23();
+}
+
+// ── Viz state reset ────────────────────────────────────────────────────────────
+function _resetVizState() {
+  _epochSnapshots = [];
+  _confMatrix     = null;
+  _confLabels     = [];
+  _pcaPoints      = [];
+  _pcaLabels      = [];
+  document.getElementById('epochEvoWrap')?.classList.add('hidden');
+  document.getElementById('viz23Wrap')?.classList.add('hidden');
+}
+
+// ── Epoch evolution ────────────────────────────────────────────────────────────
+function _renderEpochEvolution() {
+  const wrap    = document.getElementById('epochEvoWrap');
+  if (!wrap) return;
+  const imgStrip = document.getElementById('evoImgStrip');
+  const txtStack = document.getElementById('evoTextStack');
+  const accTl    = document.getElementById('evoAccTimeline');
+  imgStrip?.classList.add('hidden');
+  txtStack?.classList.add('hidden');
+  accTl?.classList.add('hidden');
+
+  const isSmart = _textTrainingMode === 'smart_prompt';
+  let hasContent = false;
+
+  if (_mode === 'image' && _epochSnapshots.length > 0 && imgStrip) {
+    imgStrip.innerHTML = '';
+    _epochSnapshots.forEach(snap => {
+      const cell = document.createElement('div');
+      cell.className = 'evo-img-cell';
+      const img = document.createElement('img');
+      img.src = 'data:image/png;base64,' + snap.preview;
+      const lbl = document.createElement('div');
+      lbl.className = 'evo-img-label';
+      lbl.textContent = `ep ${snap.epoch}`;
+      cell.appendChild(img);
+      cell.appendChild(lbl);
+      imgStrip.appendChild(cell);
+    });
+    imgStrip.classList.remove('hidden');
+    hasContent = true;
+  }
+
+  if (_mode === 'text' && !isSmart && _epochSnapshots.length > 0 && txtStack) {
+    txtStack.innerHTML = '';
+    _epochSnapshots.forEach(snap => {
+      if (!snap.sample) return;
+      const row = document.createElement('div');
+      row.className = 'evo-text-row';
+      row.innerHTML = `<div class="evo-text-epoch">Epoch ${snap.epoch}</div><div class="evo-text-content">${_svgXmlEscape(snap.sample)}</div>`;
+      txtStack.appendChild(row);
+    });
+    if (txtStack.children.length) { txtStack.classList.remove('hidden'); hasContent = true; }
+  }
+
+  if (_mode === 'classifier' && _accHist.length > 0 && accTl) {
+    _drawAccTimeline();
+    accTl.classList.remove('hidden');
+    hasContent = true;
+  }
+
+  wrap.classList.toggle('hidden', !hasContent);
+}
+
+function _drawAccTimeline() {
+  const canvas = document.getElementById('evoAccCanvas');
+  if (!canvas || _accHist.length < 2) return;
+  const W = canvas.offsetWidth || 400, H = 64;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+  const hist = _accHist;
+  const x = i => (i / (hist.length - 1)) * W;
+  const y = v => H - (v / 100) * (H - 8) - 4;
+  ctx.beginPath();
+  hist.forEach((v, i) => i === 0 ? ctx.moveTo(x(i), y(v)) : ctx.lineTo(x(i), y(v)));
+  ctx.strokeStyle = 'oklch(60% 0.12 155)'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.stroke();
+  ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
+  const fill = ctx.createLinearGradient(0, 0, 0, H);
+  fill.addColorStop(0, 'oklch(60% 0.12 155 / 0.28)');
+  fill.addColorStop(1, 'oklch(60% 0.12 155 / 0)');
+  ctx.fillStyle = fill; ctx.fill();
+}
+
+// ── Confusion heatmap + embedding scatter ──────────────────────────────────────
+function _renderViz23() {
+  const wrap   = document.getElementById('viz23Wrap');
+  if (!wrap) return;
+  const isClf  = _mode === 'classifier';
+  const hasConf = isClf && _confMatrix && _confLabels.length >= 2;
+  // Scatter only meaningful for classifier: shows per-example labeled clusters
+  const hasPca  = isClf && _pcaPoints.length >= 2;
+  const confWrap = document.getElementById('testConfWrap');
+  const embWrap  = document.getElementById('embScatterWrap');
+  const inner    = document.getElementById('viz23Inner');
+  confWrap?.classList.toggle('hidden', !hasConf);
+  embWrap?.classList.toggle('hidden', !hasPca);
+  if (!hasConf && !hasPca) { wrap.classList.add('hidden'); return; }
+  wrap.classList.remove('hidden');
+  if (inner) inner.style.gridTemplateColumns = (hasConf && hasPca) ? '1fr 1fr' : '1fr';
+  if (hasConf) _renderConfHeatmap(_confLabels, _confMatrix);
+  if (hasPca)  _renderEmbeddingScatter(_pcaPoints, _pcaLabels);
+}
+
+function _renderConfHeatmap(labels, matrix) {
+  const svg = document.getElementById('confHeatmapSvg');
+  if (!svg) return;
+  const n = labels.length;
+  const cell = 36, padL = 52, padT = 32;
+  const W = padL + n * cell, H = padT + n * cell;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('height', H);
+  const maxVal = Math.max(1, ...matrix.flat());
+  let html = '';
+  // Column labels
+  labels.forEach((lbl, ci) => {
+    html += `<text x="${padL + ci * cell + cell/2}" y="${padT - 6}" text-anchor="middle" font-size="8" fill="var(--text)" opacity=".85">${_svgXmlEscape(lbl.slice(0, 7))}</text>`;
+  });
+  // Row labels
+  labels.forEach((lbl, ri) => {
+    html += `<text x="${padL - 4}" y="${padT + ri * cell + cell/2 + 3}" text-anchor="end" font-size="8" fill="var(--text)" opacity=".85">${_svgXmlEscape(lbl.slice(0, 7))}</text>`;
+  });
+  // Cells
+  matrix.forEach((row, ri) => {
+    row.forEach((v, ci) => {
+      const t = v / maxVal;
+      let fill;
+      if (ri === ci) {
+        const l = Math.round(80 - t * 28);
+        fill = `oklch(${l}% 0.15 155)`;
+      } else if (v > 0) {
+        const l = Math.round(85 - t * 26);
+        fill = `oklch(${l}% 0.11 25)`;
+      } else {
+        fill = 'var(--card)';
+      }
+      const cx = padL + ci * cell, cy = padT + ri * cell;
+      html += `<rect x="${cx}" y="${cy}" width="${cell}" height="${cell}" fill="${fill}" rx="2"/>`;
+      if (v > 0) {
+        const tc = t > 0.55 ? '#fff' : 'var(--text)';
+        html += `<text x="${cx + cell/2}" y="${cy + cell/2 + 3.5}" text-anchor="middle" font-size="8" fill="${tc}" font-weight="600">${v}</text>`;
+      }
+    });
+  });
+  svg.innerHTML = html;
+}
+
+const _VIZ_COLORS = ['oklch(55% 0.2 283)','oklch(60% 0.18 155)','oklch(62% 0.19 35)','oklch(58% 0.17 320)','oklch(64% 0.16 200)','oklch(60% 0.18 60)','oklch(56% 0.2 250)','oklch(63% 0.15 100)'];
+
+function _renderEmbeddingScatter(points, labels) {
+  const svg = document.getElementById('embScatterSvg');
+  if (!svg || !points.length) return;
+  const unique = [...new Set(labels)].sort();
+  const colorOf = Object.fromEntries(unique.map((l, i) => [l, _VIZ_COLORS[i % _VIZ_COLORS.length]]));
+
+  // SVG layout: 10px padding on all sides for axes, plot area inside
+  const vw = 110, vh = 110;
+  const padL = 14, padT = 6, padR = 6, padB = 14;
+  const plotW = vw - padL - padR, plotH = vh - padT - padB;
+  svg.setAttribute('viewBox', `0 0 ${vw} ${vh}`);
+
+  const sx = x => padL + ((x + 1) / 2) * plotW;
+  const sy = y => padT + ((y + 1) / 2) * plotH;
+
+  let html = `<rect x="0" y="0" width="${vw}" height="${vh}" fill="var(--card)" rx="6"/>`;
+
+  // Axis lines
+  const axisColor = 'rgba(255,255,255,0.15)';
+  html += `<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+plotH}" stroke="${axisColor}" stroke-width="0.8"/>`;
+  html += `<line x1="${padL}" y1="${padT+plotH}" x2="${padL+plotW}" y2="${padT+plotH}" stroke="${axisColor}" stroke-width="0.8"/>`;
+
+  // Axis labels
+  html += `<text x="${padL + plotW/2}" y="${vh - 1}" text-anchor="middle" font-size="4.5" fill="var(--muted)">PC1</text>`;
+  html += `<text x="3.5" y="${padT + plotH/2}" text-anchor="middle" font-size="4.5" fill="var(--muted)" transform="rotate(-90,3.5,${padT + plotH/2})">PC2</text>`;
+
+  // Points
+  points.forEach(([x, y], i) => {
+    const lbl   = labels[i] || '';
+    const color = colorOf[lbl] || _VIZ_COLORS[0];
+    const cx = sx(x).toFixed(1), cy = sy(y).toFixed(1);
+    html += `<circle cx="${cx}" cy="${cy}" r="3.5" fill="${color}" stroke="rgba(0,0,0,0.3)" stroke-width="0.5" opacity="0.9"><title>${_svgXmlEscape(lbl)}</title></circle>`;
+  });
+
+  svg.innerHTML = html;
+
+  // External legend (outside SVG, uses HTML for better text rendering)
+  const legendEl = document.getElementById('embScatterLegend');
+  if (legendEl) {
+    legendEl.innerHTML = unique.map((lbl, i) =>
+      `<div style="display:flex;align-items:center;gap:4px;font-size:.7rem;color:var(--text);">
+        <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${colorOf[lbl]};flex-shrink:0;"></span>
+        ${_svgXmlEscape(lbl.slice(0, 18))}
+      </div>`
+    ).join('');
+  }
+}
+
+const _TS_COLORS = ['#6366f1','#f59e0b','#10b981','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6'];
+
+function _fillComparisonSection() {
+  const section = document.getElementById('comparisonSection');
+  if (!section) return;
+  const completed = _tsSessions.filter(s => s.status === 'complete').reverse(); // oldest first
+  if (completed.length < 2) { section.classList.add('hidden'); return; }
+  section.classList.remove('hidden');
+
+  // --- Loss curve overlay ---
+  const canvas = document.getElementById('cmpLossCanvas');
+  const legend = document.getElementById('cmpLossLegend');
+  if (canvas) {
+    const W = canvas.offsetWidth || 400, H = 120;
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    // Find global min/max across all sessions
+    const allVals = completed.flatMap(s => s.lossHistory || []).filter(Number.isFinite);
+    if (allVals.length >= 2) {
+      const gMin = Math.min(...allVals), gMax = Math.max(...allVals), gRng = (gMax - gMin) || 1;
+      completed.forEach((s, ci) => {
+        const hist = s.lossHistory;
+        if (!hist || hist.length < 2) return;
+        const color = _TS_COLORS[ci % _TS_COLORS.length];
+        const x = i => (i / (hist.length - 1)) * W;
+        const y = v => H - ((v - gMin) / gRng) * (H - 12) - 6;
+        ctx.beginPath();
+        hist.forEach((v, i) => i === 0 ? ctx.moveTo(x(i), y(v)) : ctx.lineTo(x(i), y(v)));
+        ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke();
+      });
+    }
+  }
+  if (legend) {
+    legend.innerHTML = completed.map((s, ci) =>
+      `<div class="cmp-legend-item"><div class="cmp-legend-dot" style="background:${_TS_COLORS[ci%_TS_COLORS.length]}"></div>Training ${s.num}</div>`
+    ).join('');
+  }
+
+  // --- Samples grid ---
+  const grid = document.getElementById('cmpSamplesGrid');
+  if (grid) {
+    grid.style.gridTemplateColumns = `repeat(${completed.length}, 1fr)`;
+    grid.innerHTML = completed.map((s, ci) => {
+      const color = _TS_COLORS[ci % _TS_COLORS.length];
+      let sampleHtml = '';
+      if (s.sample) {
+        if (_mode === 'image') {
+          sampleHtml = `<img src="${s.sample}" class="cmp-sample-img" alt="Training ${s.num} sample">`;
+        } else {
+          sampleHtml = `<div class="cmp-sample-txt">${s.sample.slice(0, 200)}</div>`;
+        }
+      } else {
+        sampleHtml = `<div class="cmp-sample-txt" style="color:var(--muted);font-style:italic;">No sample captured</div>`;
+      }
+      const m = s.metrics;
+      let metricsHtml = '';
+      if (_mode === 'image' && m) {
+        metricsHtml += m.lossFinal != null
+          ? `<div style="font-size:.7rem;color:var(--muted);margin-top:4px;text-align:center;">loss ${m.lossFinal.toFixed(3)}${m.lossReductionPct != null ? ` <span style="color:oklch(72% 0.19 145)">↓${m.lossReductionPct}%</span>` : ''}</div>`
+          : '';
+        metricsHtml += m.diversity != null
+          ? `<div style="font-size:.7rem;color:var(--muted);margin-top:1px;text-align:center;">diversity ${m.diversity.toFixed(3)}</div>`
+          : '';
+        if (m.reconErrors && m.reconErrors.length > 0) {
+          metricsHtml += _renderReconBars(m.reconErrors, color);
+        }
+      } else if (s.loss !== null) {
+        metricsHtml = `<div style="font-size:.7rem;color:var(--muted);margin-top:3px;text-align:center;">loss ${s.loss.toFixed(3)}</div>`;
+      }
+      return `<div>
+        <div class="cmp-col-head" style="color:${color}">Training ${s.num}</div>
+        ${sampleHtml}
+        ${metricsHtml}
+      </div>`;
+    }).join('');
+  }
+
+  // --- Narrative panel (image mode, 2 most recent sessions) ---
+  const narrativeWrap = document.getElementById('cmpNarrativeWrap');
+  if (narrativeWrap) {
+    const recent = completed.slice(-2); // last 2 in chronological order
+    if (_mode === 'image' && recent.length >= 2 && recent[0].metrics && recent[1].metrics) {
+      const older = recent[0], newer = recent[1];
+      narrativeWrap.innerHTML = _genNarrative(older, newer);
+      narrativeWrap.classList.remove('hidden');
+    } else {
+      narrativeWrap.classList.add('hidden');
+    }
+  }
+}
+
+function _renderReconBars(errors, accentColor) {
+  if (!errors || errors.length === 0) return '';
+  const maxErr = Math.max(...errors, 1e-9);
+  const rows = errors.map((e, i) => {
+    const pct = (e / maxErr * 100).toFixed(1);
+    return `<div class="cmp-recon-bar-row">
+      <div class="cmp-recon-bar-label">img ${i + 1}</div>
+      <div class="cmp-recon-bar-track"><div class="cmp-recon-bar-fill" style="width:${pct}%;background:${accentColor};opacity:.75;"></div></div>
+      <div class="cmp-recon-bar-val">${(e * 1000).toFixed(1)}‰</div>
+    </div>`;
+  }).join('');
+  return `<div class="cmp-recon-wrap">
+    <div class="cmp-recon-title">Reconstruction error per image</div>
+    ${rows}
+  </div>`;
+}
+
+function _genNarrative(older, newer) {
+  const mo = older.metrics, mn = newer.metrics;
+  const bullets = [];
+
+  // Loss improvement
+  if (mo.lossFinal != null && mn.lossFinal != null) {
+    const delta = mo.lossFinal - mn.lossFinal;
+    if (delta > 0.001) {
+      bullets.push(`Loss improved from <strong>${mo.lossFinal.toFixed(3)}</strong> → <strong>${mn.lossFinal.toFixed(3)}</strong> (↓${Math.round(delta / mo.lossFinal * 100)}%).`);
+    } else if (delta < -0.001) {
+      bullets.push(`Loss increased from <strong>${mo.lossFinal.toFixed(3)}</strong> → <strong>${mn.lossFinal.toFixed(3)}</strong> — the newer training may need more epochs or data.`);
+    } else {
+      bullets.push(`Loss stayed roughly the same (${mo.lossFinal.toFixed(3)} vs ${mn.lossFinal.toFixed(3)}).`);
+    }
+  }
+
+  // Loss reduction within each run
+  if (mo.lossReductionPct != null && mn.lossReductionPct != null) {
+    const olderRed = mo.lossReductionPct, newerRed = mn.lossReductionPct;
+    if (Math.abs(newerRed - olderRed) >= 5) {
+      const better = newerRed > olderRed ? 'newer' : 'older';
+      bullets.push(`The ${better} training reduced loss more within its run (${newerRed}% vs ${olderRed}%).`);
+    }
+  }
+
+  // Diversity
+  if (mo.diversity != null && mn.diversity != null) {
+    const dDelta = mn.diversity - mo.diversity;
+    if (Math.abs(dDelta) >= 0.005) {
+      const dir = dDelta > 0 ? 'more diverse' : 'less diverse';
+      bullets.push(`Generated images are ${dir} in the newer training (diversity ${mn.diversity.toFixed(3)} vs ${mo.diversity.toFixed(3)}).`);
+    } else {
+      bullets.push(`Sample diversity is similar across both trainings (${mn.diversity.toFixed(3)} vs ${mo.diversity.toFixed(3)}).`);
+    }
+  }
+
+  // Closing sentence
+  const lossImproved   = mo.lossFinal != null && mn.lossFinal != null && mn.lossFinal < mo.lossFinal - 0.001;
+  const divImproved    = mo.diversity != null && mn.diversity != null && mn.diversity > mo.diversity + 0.005;
+  const lossDeterior   = mo.lossFinal != null && mn.lossFinal != null && mn.lossFinal > mo.lossFinal + 0.001;
+  let closing = '';
+  if (lossImproved && divImproved) {
+    closing = 'More data or training time helped — the model learned more varied structure.';
+  } else if (lossImproved) {
+    closing = 'The model reconstructs images more faithfully now. Try more trainings to see if diversity also grows.';
+  } else if (lossDeterior) {
+    closing = 'Try adding more images or increasing epochs — the model may need more signal.';
+  } else {
+    closing = 'Trainings are comparable. Experiment with more images or different settings to push further.';
+  }
+
+  if (bullets.length === 0) return '';
+
+  return `<div class="cmp-narrative-title">🔍 What changed between Training ${older.num} and Training ${newer.num}?</div>
+    <ul>${bullets.map(b => `<li>${b}</li>`).join('')}</ul>
+    <div class="cmp-narrative-close">${closing}</div>`;
 }
 
 function _fillDeployStats() {
@@ -3139,8 +4070,8 @@ function _fillDeployStats() {
     label = '🖼️ Image Generator (VAE)';
     sub   = 'You built and trained a VAE image generator from scratch. Here\'s what it learned:';
   } else if (_mode === 'classifier') {
-    const tm = _clfTrainingMode === 'finetune' ? 'AI'
-             : _clfTrainingMode === 'scratch' ? 'Machine Learning'
+    const tm = _clfTrainingMode === 'finetune' ? 'Pre-trained'
+             : _clfTrainingMode === 'scratch' ? 'From Scratch'
              : '—';
     const kind = _inputMode === 'text' ? 'text' : 'image';
     label = `🏷️ ${kind.charAt(0).toUpperCase() + kind.slice(1)} Classifier (${tm})`;
@@ -3158,6 +4089,417 @@ function _fillDeployStats() {
   document.getElementById('modelTypeBadge').textContent = label;
   document.getElementById('deploySub').textContent      = sub;
   document.getElementById('finetuneWarn')?.classList.toggle('hidden', _mode !== 'text' || _textTrainingMode !== 'finetune');
+}
+
+// ── Session-based Training Activity ──────────────────────────────────────────
+let _tsSessions  = [];   // [{id, num, uploadCount, uploadTs, params, status, startTs, endTs, loss, durationMs, collapsed}]
+let _tsIdCounter = 0;
+let _tsAgeTimer  = null;
+
+function _tsAge(ms) {
+  if (ms < 5000)    return 'just now';
+  if (ms < 60000)   return Math.floor(ms / 1000) + 's ago';
+  if (ms < 3600000) return Math.floor(ms / 60000) + 'm ago';
+  return Math.floor(ms / 3600000) + 'h ago';
+}
+
+function _tsFmtDur(ms) {
+  const s = Math.round(ms / 1000);
+  if (s < 60) return s + 's';
+  return Math.floor(s / 60) + 'm ' + (s % 60) + 's';
+}
+
+function _tsNewSession() {
+  _tsSessions.forEach(s => { s.collapsed = true; });
+  _tsIdCounter++;
+  _tsSessions.unshift({
+    id: _tsIdCounter, num: _tsIdCounter,
+    uploadCount: 0, uploadTs: null,
+    params: null,
+    status: 'ready',
+    startTs: null, endTs: null,
+    loss: null, durationMs: null,
+    collapsed: false,
+  });
+  _tsRenderSessions();
+}
+
+function _tsInit() {
+  if (_tsSessions.length === 0) _tsNewSession();
+}
+
+function _tsUpdateUploads() {
+  const active = _tsSessions.find(s => s.status === 'ready');
+  if (!active) return;
+  active.uploadCount = _nData;
+  if (_nData > 0) active.uploadTs = Date.now();
+  _tsRenderSessions();
+  if (!_tsAgeTimer) _tsAgeTimer = setInterval(_tsRenderSessions, 15000);
+}
+
+function _tsReadParams() {
+  const isSmart = _textTrainingMode === 'smart_prompt';
+  if (isSmart) return { smart: true, count: _nData };
+  const epochs = parseInt(document.getElementById('epochsSlider')?.value || '60');
+  const lr     = _chips.lr || 'steady';
+  const r      = { epochs, lr, mode: _mode };
+  if (_mode === 'image') r.latent = parseInt(document.getElementById('latentSlider')?.value || '256');
+  return r;
+}
+
+function _tsSnapshotCompare(durMs) {
+  const n         = _nParams;
+  const brainFmt  = _cmpFmtParams(n);
+  const bigBrainN = _mode === 'image' ? 860e6 : _mode === 'classifier' ? 1.8e9 : 1.76e12;
+  const bigName   = _mode === 'image' ? 'SD' : _mode === 'classifier' ? 'ViT-G' : 'GPT-4';
+  let studyLine = '';
+  if (_mode === 'image') studyLine = `${_nData} imgs vs ~2.3B (SD)`;
+  else if (_textTrainingMode === 'finetune') studyLine = `${_nData} texts vs ~40B (DistilGPT-2)`;
+  else studyLine = `${_nData} examples vs ~3.75M books`;
+  const yourKwh   = (durMs / 1000) * 25 / 3600 / 1000;
+  const bigKwh    = _mode === 'image' ? 200000 : _mode === 'classifier' ? 50000 : 50000000;
+  return {
+    brain:  `${brainFmt} params  ·  ${bigName} ~${_cmpFmtParams(bigBrainN)}`,
+    study:  studyLine,
+    time:   `${_tsFmtDur(durMs)}  ·  ${bigName} ~90 days`,
+    energy: `~${_cmpFmtKwh(yourKwh)}  ·  ${bigName} ~${_cmpFmtKwh(bigKwh)}`,
+  };
+}
+
+function _tsStartTraining() {
+  let active = _tsSessions.find(s => s.status === 'ready');
+  if (!active) { _tsNewSession(); active = _tsSessions[0]; }
+  active.uploadCount = _nData;
+  if (_nData > 0) active.uploadTs = Date.now();
+  active.params  = _tsReadParams();
+  active.status  = 'training';
+  active.startTs = Date.now();
+  // No auto-new-session — student uses "+ New Training" button explicitly
+  _tsRenderSessions();
+}
+
+function _tsComplete(loss, durationMs, budgetReached, actualEpochs, metrics) {
+  const s = _tsSessions.find(s => s.status === 'training');
+  if (!s) return;
+  s.status        = 'complete';
+  s.endTs         = Date.now();
+  s.loss          = typeof loss === 'number' && isFinite(loss) ? loss : null;
+  s.durationMs    = durationMs || null;
+  s.budgetReached = !!budgetReached;
+  s.actualEpochs  = actualEpochs || null;
+  s.collapsed     = true;
+  // Capture per-session snapshots (UI-only, in-memory)
+  s.lossHistory = [..._lossHist];
+  s.compare     = _tsSnapshotCompare(durationMs || 0);
+  const imgEl  = document.getElementById('prevImg');
+  const txtEl  = document.getElementById('txtSampleBox');
+  s.sample = _mode === 'image'
+    ? (imgEl && !imgEl.classList.contains('hidden') ? imgEl.src : null)
+    : (txtEl && txtEl.classList.contains('has-text') ? txtEl.textContent : null);
+  // Image-mode extended metrics
+  if (metrics) {
+    const lossInitial = _lossHist[0] ?? null;
+    const lossFinal   = loss;
+    const lossReductionPct = (lossInitial && lossFinal && lossInitial > 0)
+      ? Math.round((lossInitial - lossFinal) / lossInitial * 100) : null;
+    s.metrics = {
+      lossInitial,
+      lossFinal,
+      lossReductionPct,
+      diversity:    metrics.diversity   ?? null,
+      reconErrors:  metrics.reconErrors ?? [],
+    };
+  }
+  _tsRenderSessions();
+}
+
+function _tsError() {
+  const s = _tsSessions.find(s => s.status === 'training');
+  if (!s) return;
+  s.status    = 'error';
+  s.endTs     = Date.now();
+  s.collapsed = true;
+  _tsRenderSessions();
+}
+
+function _tsReset() {
+  _tsSessions  = [];
+  _tsIdCounter = 0;
+  if (_tsAgeTimer) { clearInterval(_tsAgeTimer); _tsAgeTimer = null; }
+}
+
+async function _tsNewTraining() {
+  const isTraining = _tsSessions.some(s => s.status === 'training');
+  if (isTraining) return;
+
+  // Snapshot state BEFORE clearing — fork from most recent completed session
+  const hasCompleted = _tsSessions.some(s => s.status === 'complete');
+  const fork = hasCompleted ? _buildForkSnapshot() : null;
+
+  // Archive current ready session if it has data but was never trained
+  const active = _tsSessions.find(s => s.status === 'ready');
+  if (active) {
+    if (active.uploadCount > 0) {
+      active.status = 'skipped'; active.endTs = Date.now(); active.collapsed = true;
+    } else {
+      _tsSessions = _tsSessions.filter(s => s !== active);
+    }
+  }
+  // Clear all uploaded data
+  await fetch('/api/clear', { method: 'POST' });
+  _nData = 0; _txtItems = []; _imgThumbs = []; _imgDataUrls = []; _loadedModelId = null;
+  _renderImgThumbs(); _renderTxtList(); _updateCountBadge();
+  if (_mode === 'classifier') {
+    _clfCounts = {}; _clfLabels = []; _clfThumbs = {};
+    const lbl = document.getElementById('clfLabelList');
+    if (lbl) lbl.innerHTML = '<div style="font-size:.88rem;color:var(--muted);padding:6px 0;" id="clfLabelEmpty">Add at least 2 labels to get started.</div>';
+  }
+  _resetPreview();
+  _paramRevealCount = 1; _paramRevealKey = '';
+  if (_setupStage > 2) _setupStage = 2;
+  _syncSetupFlow();
+  _tsNewSession();
+
+  // Re-populate from fork snapshot
+  if (fork) {
+    await _applyForkSnapshot(fork);
+    _paramRevealCount = _paramOrder().length;
+    _syncSetupFlow();
+  }
+
+  // Always route to Train sub-tab so the student sees the fresh workspace.
+  if (_step !== 1) goTo(1);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function _buildForkSnapshot() {
+  // Find the most recent completed session number for the banner
+  const prevNum = [..._tsSessions].reverse().find(s => s.status === 'complete')?.num ?? null;
+  return {
+    prevNum,
+    mode:     _mode,
+    textMode: _textTrainingMode,
+    clfMode:  _clfTrainingMode,
+    imgDataUrls: [..._imgDataUrls],
+    txtItems:    [..._txtItems],
+    clfLabels:   [..._clfLabels],
+    clfThumbs:   JSON.parse(JSON.stringify(_clfThumbs)),
+    // Param snapshots from DOM (captured before any reset)
+    epochs: document.getElementById('epochsSlider')?.value ?? '60',
+    latent: document.getElementById('latentSlider')?.value ?? '256',
+    aug:    document.getElementById('augSlider')?.value    ?? '50',
+    win:    document.getElementById('winSlider')?.value    ?? '40',
+    chips:  { ..._chips },
+  };
+}
+
+async function _applyForkSnapshot(fork) {
+  if (!fork) return;
+
+  // Restore training mode (this also adjusts epoch slider ranges for some modes)
+  if (fork.mode === 'text' && fork.textMode) selectTrainingMode(fork.textMode);
+  else if (fork.mode === 'classifier' && fork.clfMode) selectClfTrainingMode(fork.clfMode);
+
+  // Restore param sliders
+  const _setSlider = (id, valId, val, vizFn) => {
+    const sl = document.getElementById(id);
+    const vl = document.getElementById(valId);
+    if (sl && val != null) {
+      sl.value = val;
+      if (vl) vl.textContent = val;
+      if (vizFn) vizFn(+val);
+    }
+  };
+  _setSlider('epochsSlider', 'epochsVal', fork.epochs, updateEpochViz);
+  if (fork.mode === 'image') {
+    _setSlider('latentSlider', 'latentVal', fork.latent, updateLatentViz);
+    const augSl = document.getElementById('augSlider');
+    const augVl = document.getElementById('augVal');
+    if (augSl && fork.aug) {
+      augSl.value = fork.aug;
+      if (augVl) augVl.textContent = fork.aug + '×';
+      updateAugViz(+fork.aug);
+    }
+  }
+  if (fork.mode === 'text' && fork.textMode === 'scratch') {
+    _setSlider('winSlider', 'winVal', fork.win, null);
+  }
+
+  // Restore chip selections
+  Object.assign(_chips, fork.chips);
+  _restoreForkChips('lrGroup',      'lr',       fork.chips.lr);
+  _restoreForkChips('batchGroup',   'batch',    fork.chips.batch);
+  _restoreForkChips('scratchParams','txtBatch', fork.chips.txtBatch);
+
+  // Restore data
+  if (fork.mode === 'image') {
+    if (fork.imgDataUrls.length > 0) {
+      for (const dataUrl of fork.imgDataUrls) await _uploadImg(dataUrl);
+      _showForkBanner(fork.prevNum, false);
+    } else {
+      _showForkBanner(fork.prevNum, true);
+    }
+  } else if (fork.mode === 'text') {
+    for (const text of fork.txtItems) {
+      const res = await fetch('/api/upload', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text}) });
+      const d   = await res.json();
+      if (!d.ok) continue;
+      _nData = d.count;
+      _txtItems.push(text);
+    }
+    _updateCountBadge(); _renderTxtList();
+    if (fork.txtItems.length > 0) _showForkBanner(fork.prevNum, false);
+  } else if (fork.mode === 'classifier') {
+    for (const label of fork.clfLabels) {
+      await _clfAddLabelProg(label);
+      for (const dataUrl of (fork.clfThumbs[label] || [])) await _clfUploadExample(label, dataUrl);
+    }
+    if (fork.clfLabels.length > 0) _showForkBanner(fork.prevNum, false);
+  }
+
+  _syncSetupFlow();
+}
+
+function _restoreForkChips(groupId, chipKey, val) {
+  if (!val) return;
+  const group = document.getElementById(groupId);
+  if (!group) return;
+  group.querySelectorAll('.chip').forEach(c => {
+    const oc = c.getAttribute('onclick') || '';
+    // Extract the chip value from: setChip(this,'key','value')
+    const m = oc.match(/setChip\(this,'[^']+','([^']+)'\)/);
+    c.classList.toggle('active', !!(m && m[1] === val));
+  });
+}
+
+async function _clfAddLabelProg(label) {
+  if (!label || _clfLabels.includes(label)) return;
+  _clfLabels.push(label);
+  _clfCounts[label] = 0;
+  await fetch('/api/classifier/labels', { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ labels: _clfLabels }) });
+  _clfRenderLabels();
+}
+
+function _showForkBanner(prevNum, dataMissing) {
+  document.getElementById('forkBanner')?.remove();
+  const banner = document.createElement('div');
+  banner.id = 'forkBanner';
+  if (dataMissing) {
+    Object.assign(banner.style, {
+      background:'oklch(97% 0.05 80)', border:'1px solid oklch(75% 0.12 80)',
+      borderRadius:'8px', padding:'6px 10px', fontSize:'.78rem',
+      color:'oklch(45% 0.12 80)', marginBottom:'8px', lineHeight:'1.4',
+    });
+    banner.textContent = `Examples from Training ${prevNum ?? ''} couldn't be loaded — please re-upload.`;
+  } else {
+    Object.assign(banner.style, {
+      background:'var(--primary-lite)', border:'1px solid var(--primary-mid)',
+      borderRadius:'8px', padding:'6px 10px', fontSize:'.78rem',
+      color:'var(--primary-dark)', marginBottom:'8px', lineHeight:'1.4',
+    });
+    banner.textContent = `✓ Forked from Training ${prevNum} — examples and parameters copied. Add, remove, or change anything before training.`;
+  }
+  // Insert after the subtitle line (children[1]) so the step title stays first
+  const parent = document.getElementById('setupDataCol');
+  if (parent && parent.children.length >= 2) {
+    parent.insertBefore(banner, parent.children[2] ?? null);
+  } else if (parent) {
+    parent.appendChild(banner);
+  }
+}
+
+function _tsToggle(id) {
+  const s = _tsSessions.find(s => s.id === id);
+  if (s) { s.collapsed = !s.collapsed; _tsRenderSessions(); }
+}
+
+function _tsRenderSessionBlock(s, now) {
+  const chevron = s.collapsed ? '▶' : '▼';
+  let timeLabel = 'ready';
+  if      (s.status === 'complete' && s.endTs)   timeLabel = _tsAge(now - s.endTs);
+  else if (s.status === 'error'    && s.endTs)   timeLabel = _tsAge(now - s.endTs);
+  else if (s.status === 'training' && s.startTs) timeLabel = _tsAge(now - s.startTs);
+  const title = `Training ${s.num} · ${timeLabel}`;
+
+  const parts = [];
+  if (s.uploadCount > 0)                             parts.push(`${s.uploadCount} example${s.uploadCount !== 1 ? 's' : ''}`);
+  if (s.params?.epochs)                             parts.push(`${s.params.epochs} epochs`);
+  if (s.status === 'complete' && s.loss !== null)   parts.push(`loss ${s.loss.toFixed(2)}`);
+  if (s.status === 'skipped')                        parts.push('not run');
+  const summary = parts.length ? parts.join(' · ') : 'Upload examples to begin.';
+
+  if (s.collapsed) {
+    return `<div class="ts-block" onclick="_tsToggle(${s.id})">
+      <div class="ts-header"><span class="ts-chevron">${chevron}</span><span class="ts-title">${title}</span></div>
+      <div class="ts-summary">${summary}</div>
+    </div>`;
+  }
+
+  // Expanded
+  const uploadLine = s.uploadCount > 0
+    ? `${s.uploadCount} example${s.uploadCount !== 1 ? 's' : ''}${s.uploadTs ? ' · last added ' + _tsAge(now - s.uploadTs) : ''}`
+    : 'Upload examples to begin.';
+
+  let paramLine = '';
+  if (s.params) {
+    if (s.params.smart) {
+      paramLine = `${s.params.count} example${s.params.count !== 1 ? 's' : ''} · RAG mode`;
+    } else {
+      const pp = [];
+      if (s.params.epochs) pp.push(`${s.params.epochs} epochs`);
+      if (s.params.lr)     pp.push(s.params.lr);
+      if (s.params.mode === 'image' && s.params.latent) pp.push(`latent ${s.params.latent}`);
+      paramLine = pp.join(' · ') || '—';
+    }
+  }
+
+  let statusLine = '';
+  if      (s.status === 'ready')    statusLine = s.uploadCount > 0 ? 'Ready to train.' : 'Waiting for examples.';
+  else if (s.status === 'training') statusLine = `Training started ${s.startTs ? _tsAge(now - s.startTs) : '…'}`;
+  else if (s.status === 'complete') {
+    const lossStr = s.loss    !== null ? ` · loss ${s.loss.toFixed(3)}`  : '';
+    const durStr  = s.durationMs      ? ' · ' + _tsFmtDur(s.durationMs) : '';
+    statusLine = `✓ Complete${lossStr}${durStr}`;
+  }
+  else if (s.status === 'error') statusLine = '⚠ Training stopped';
+  else if (s.status === 'skipped') statusLine = 'Not run · archived';
+
+  const cmpHtml = (s.status === 'complete' && s.compare) ? `
+    <div style="border-top:1px solid var(--border);margin-top:4px;padding-top:6px;">
+      <div style="font-size:.63rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">vs Big AI</div>
+      <div style="font-size:.72rem;color:var(--text);display:flex;flex-direction:column;gap:2px;">
+        <div>🧠 ${s.compare.brain}</div>
+        <div>📚 ${s.compare.study}</div>
+        <div>⏱ ${s.compare.time}</div>
+        <div>⚡ ${s.compare.energy}</div>
+      </div>
+    </div>` : '';
+  return `<div class="ts-block">
+    <div class="ts-header" onclick="_tsToggle(${s.id})"><span class="ts-chevron">${chevron}</span><span class="ts-title">${title}</span></div>
+    <div class="ts-body">
+      <div class="ts-row"><span class="ts-row-icon">📦</span><div><div class="ts-row-label">Uploads</div><div class="ts-row-val">${uploadLine}</div></div></div>
+      ${paramLine ? `<div class="ts-row"><span class="ts-row-icon">⚙</span><div><div class="ts-row-label">Parameters</div><div class="ts-row-val">${paramLine}</div></div></div>` : ''}
+      <div class="ts-row"><span class="ts-row-icon">📊</span><div><div class="ts-row-label">Status</div><div class="ts-row-val">${statusLine}</div></div></div>
+      ${cmpHtml}
+    </div>
+  </div>`;
+}
+
+function _tsRenderSessions() {
+  const el = document.getElementById('brainMsgListTrain');
+  if (!el) return;
+  const now = Date.now();
+  const isTraining = _tsSessions.some(s => s.status === 'training');
+  const btnDisabled = isTraining ? 'disabled title="Wait for current training to finish."' : '';
+  const btnStyle = isTraining ? 'opacity:.45;cursor:not-allowed;' : '';
+  const newBtn = `<button ${btnDisabled} onclick="_tsNewTraining()" style="width:100%;margin-bottom:8px;padding:7px 12px;background:transparent;border:1px solid var(--border);border-radius:8px;font-size:.78rem;font-weight:700;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:background .15s;${btnStyle}" onmouseenter="if(!this.disabled)this.style.background='var(--primary-sel)'" onmouseleave="this.style.background='transparent'">
+    <span style="font-size:.9rem;">+</span> New Training
+  </button>`;
+  el.innerHTML = newBtn + (_tsSessions.length === 0
+    ? '<div style="font-size:.75rem;color:var(--muted);padding:4px 2px;">Sessions will appear here when you start training.</div>'
+    : _tsSessions.map(s => _tsRenderSessionBlock(s, now)).join(''));
+  if (!_tsAgeTimer) _tsAgeTimer = setInterval(_tsRenderSessions, 15000);
 }
 
 // ── Theme ──────────────────────────────────────────────────────────────────────
@@ -3366,11 +4708,23 @@ async function sendChat() {
   msgs.appendChild(botBubble);
   msgs.scrollTop = msgs.scrollHeight;
 
-  // For Smart Prompt: draw response scatter plot
+  // For Smart Prompt: draw response scatter plot + update RAG top-5
   if (d.ok && _textTrainingMode === 'smart_prompt') {
     _smartHighlights = d.viz_highlights || [];
     if (_smartVizData.length) {
       _drawResponsePlot(_smartVizData, _smartHighlights, d.response_coords || null);
+    }
+    // Update Training Insights RAG list
+    const ragList = document.getElementById('tiRagList');
+    if (ragList && d.matches && d.matches.length) {
+      const top5 = d.matches.slice(0, 5);
+      ragList.innerHTML = top5.map((m, i) =>
+        `<div style="display:flex;align-items:baseline;gap:8px;padding:5px 8px;background:var(--card-bg);border-radius:8px;border:1px solid var(--border);">
+          <span style="font-size:.75rem;font-weight:800;color:var(--primary);flex-shrink:0;min-width:18px;">#${i+1}</span>
+          <span style="font-size:.82rem;flex:1;color:var(--text);line-height:1.4;">${m.text.slice(0, 80)}${m.text.length > 80 ? '…' : ''}</span>
+          <span style="font-size:.78rem;font-weight:700;color:var(--primary-dark);flex-shrink:0;">${m.sim}%</span>
+        </div>`
+      ).join('');
     }
   }
 }
@@ -4139,6 +5493,12 @@ function updateEpochViz(val) {
   el.innerHTML = Array.from({length: total}, (_, i) =>
     `<div class="vdot${i < lit ? ' lit' : ''}"></div>`
   ).join('');
+  const hint = document.getElementById('epochDynHint');
+  if (hint) {
+    hint.textContent = val <= 20 ? '⚡ Quick run — fast but might miss patterns.'
+      : val <= 60 ? '⚖️ Balanced — a solid default choice.'
+      : '🔬 Deep run — slower but more thorough.';
+  }
 }
 
 function updateSpeedViz(val) {
@@ -4175,7 +5535,7 @@ function updateBatchViz(val) {
 function _initAllViz() {
   updateEpochViz(+(document.getElementById('epochsSlider')?.value || 60));
   updateSpeedViz(_chips.lr || 'steady');
-  updateLatentViz(+(document.getElementById('latentSlider')?.value || 128));
+  updateLatentViz(+(document.getElementById('latentSlider')?.value || 256));
   updateAugViz(+(document.getElementById('augSlider')?.value || 50));
   updateBatchViz(+(_chips.batch || 8));
 }
@@ -4216,60 +5576,172 @@ function _fmtDur(ms) {
   return r > 0 ? `${m} min ${r} sec` : `${m} minutes`;
 }
 
+// ── Comparison card helpers ────────────────────────────────────────────────────
+
+function _cmpFmtParams(n) {
+  if (n >= 1e12) return (n / 1e12).toFixed(2) + 'T';
+  if (n >= 1e9)  return (n / 1e9).toFixed(2)  + 'B';
+  if (n >= 1e6)  return (n / 1e6).toFixed(2)  + 'M';
+  if (n >= 1e3)  return Math.round(n / 1e3)    + 'K';
+  return String(n);
+}
+
+function _cmpFmtCount(n) {
+  if (n >= 1e9)  return (n / 1e9).toFixed(1)  + 'B';
+  if (n >= 1e6)  return (n / 1e6).toFixed(1)  + 'M';
+  if (n >= 1e3)  return Math.round(n / 1e3)    + 'K';
+  return String(Math.round(n));
+}
+
+function _cmpFmtSeconds(s) {
+  if (s < 60)        return `${Math.round(s).toLocaleString()} seconds`;
+  if (s < 3600)      return `${Math.floor(s/60)} min ${Math.round(s%60)} sec`;
+  if (s < 86400)     return `${(s/3600).toFixed(1)} hours`;
+  return `${(s/86400).toFixed(1)} days`;
+}
+
+function _cmpFmtKwh(kwh) {
+  if (kwh < 0.001)  return kwh.toFixed(7).replace(/0+$/, '') + ' kWh';
+  if (kwh < 1)      return kwh.toFixed(4) + ' kWh';
+  if (kwh < 1000)   return kwh.toFixed(2) + ' kWh';
+  return kwh.toLocaleString('en-US', {maximumFractionDigits: 0}) + ' kWh';
+}
+
+function _cmpEnergyContext(kwh) {
+  const wh = kwh * 1000;
+  if (wh < 1) {
+    // sub-Wh: compare to phone charger (~5 W)
+    const mins = Math.max(1, Math.round(wh / (5 / 60)));
+    return `≈ ${wh < 0.001 ? (wh * 1000).toFixed(1) + ' mWh' : wh.toFixed(3) + ' Wh'} — same as a phone charger for ~${mins} min`;
+  }
+  if (kwh < 0.1) {
+    // 1–100 Wh: compare to charging a phone (~10 Wh per charge)
+    const charges = (wh / 10).toFixed(1);
+    return `≈ ${wh.toFixed(1)} Wh — like charging a phone ${charges} time${parseFloat(charges) !== 1 ? 's' : ''}`;
+  }
+  if (kwh < 10) {
+    // 100 Wh – 10 kWh: light bulb hours (~10 W LED)
+    const hrs = Math.round(kwh * 100);   // kWh / 0.01 kWh per hour
+    return `≈ a LED bulb running for ${hrs.toLocaleString()} hour${hrs !== 1 ? 's' : ''}`;
+  }
+  // ≥ 10 kWh: homes per year (avg US home ~10,000 kWh/year)
+  const homes = Math.max(1, Math.round(kwh / 10000));
+  return `≈ powering ${homes.toLocaleString()} home${homes !== 1 ? 's' : ''} for a year`;
+}
+
+function _cmpRatioLine(youVal, bigVal, label) {
+  if (!youVal || !bigVal || youVal <= 0) return '';
+  const ratio = bigVal / youVal;
+  if (ratio < 2) return '';
+  const fmtRatio = ratio >= 1e9  ? (ratio / 1e9).toFixed(1)  + 'B×'
+                 : ratio >= 1e6  ? (ratio / 1e6).toFixed(1)  + 'M×'
+                 : ratio >= 1e3  ? (ratio / 1e3).toFixed(1)  + 'K×'
+                 : ratio >= 10   ? Math.round(ratio)          + '×'
+                 : ratio.toFixed(1)                           + '×';
+  return `Big AI is ~${fmtRatio} ${label}`;
+}
+
+function _setCmpRatio(elId, ratioText) {
+  let el = document.getElementById(elId);
+  if (!el) {
+    el = document.createElement('div');
+    el.id = elId;
+    el.style.cssText = 'font-size:.68rem;color:var(--primary-mid);font-weight:700;margin-top:4px;';
+    document.getElementById(elId.replace('Ratio', 'Stat'))?.after(el);
+  }
+  el.textContent = ratioText;
+  el.style.display = ratioText ? '' : 'none';
+}
+
 function _fillCompareCard() {
   const n   = _nParams;
   const dur = _trainTimeMs;
   const pl  = x => x !== 1 ? 's' : '';
 
-  // 🧠 Brain size
-  const brainFmt = n >= 1e6
-    ? (n / 1e6).toFixed(1) + ' million'
-    : Math.round(n / 1000) + ' thousand';
-  document.getElementById('cmpBrainStat').textContent =
-    `You: ${brainFmt} memory cells  ·  ChatGPT: ~1.76 trillion`;
-  document.getElementById('cmpBrainXfer').textContent =
-    'A library vs a single bookshelf.';
+  // ── 🧠 Brain size ──────────────────────────────────────────────────────────
+  const BIG_AI_PARAMS = {
+    image:      { name: 'Stable Diffusion',  params: 860e6  },
+    classifier: { name: 'ViT-G/14',          params: 1.8e9  },
+    text:       { name: 'ChatGPT (GPT-4)',   params: 1.76e12 },
+  };
+  const bigBrain = BIG_AI_PARAMS[_mode] || BIG_AI_PARAMS.text;
+  document.getElementById('cmpBrainStat').innerHTML =
+    `You: <strong>${_cmpFmtParams(n)}</strong> params &nbsp;·&nbsp; ${bigBrain.name}: <strong>${_cmpFmtParams(bigBrain.params)}</strong> params`;
+  const cmpBrainXfer = document.getElementById('cmpBrainXfer');
+  cmpBrainXfer.textContent = 'Parameters are the numbers the model adjusts during training to learn patterns. More = more expressive, but needs more data and time.';
+  cmpBrainXfer.style.display = '';
+  _setCmpRatio('cmpBrainRatio', _cmpRatioLine(n, bigBrain.params, 'bigger'));
 
-  // 📚 Examples studied
-  if (_mode === 'image') {
-    document.getElementById('cmpStudyStat').textContent =
-      `You: ${_nData} image${pl(_nData)}  ·  Stable Diffusion: 2.3 billion images`;
-    document.getElementById('cmpStudyXfer').textContent =
-      'Like comparing one photo to every photo ever taken.';
-  } else if (_textTrainingMode === 'finetune') {
-    document.getElementById('cmpStudyStat').textContent =
-      `Your examples: ${_nData} text${pl(_nData)}  ·  DistilGPT-2 base: ~40 billion words`;
-    document.getElementById('cmpStudyXfer').textContent =
-      'You taught it your style on top of what it already knew.';
-  } else {
-    document.getElementById('cmpStudyStat').textContent =
-      `You: ${_nData} text sample${pl(_nData)}  ·  GPT-3: ~3.75 million books`;
-    document.getElementById('cmpStudyXfer').textContent =
-      'Like comparing one class to all of humanity.';
-  }
+  // ── 📚 Examples studied ────────────────────────────────────────────────────
+  const BIG_AI_STUDY = {
+    image:     { name: 'Stable Diffusion', count: 2.3e9,  unit: 'images' },
+    finetune:  { name: 'DistilGPT-2',     count: 40e9,   unit: 'words'  },
+    scratch:   { name: 'GPT-3',           count: 3.75e6, unit: 'books'  },
+    smart:     { name: 'GPT-3',           count: 3.75e6, unit: 'books'  },
+    clf_image: { name: 'CLIP',            count: 400e6,  unit: 'images' },
+    clf_text:  { name: 'BERT',            count: 3300e6, unit: 'words'  },
+  };
+  let studyKey = _mode === 'image'      ? 'image'
+               : _mode === 'classifier' ? (_inputMode === 'text' ? 'clf_text' : 'clf_image')
+               : _textTrainingMode === 'finetune' ? 'finetune' : 'scratch';
+  const bigStudy = BIG_AI_STUDY[studyKey] || BIG_AI_STUDY.scratch;
+  const youUnit  = _mode === 'image' ? 'image' : 'example';
+  document.getElementById('cmpStudyStat').innerHTML =
+    `You: <strong>${_nData.toLocaleString()}</strong> ${youUnit}${pl(_nData)} &nbsp;·&nbsp; ${bigStudy.name}: <strong>~${_cmpFmtCount(bigStudy.count)}</strong> ${bigStudy.unit}`;
+  const studyContext = _mode === 'image'
+    ? 'Like comparing one photo to every photo ever taken.'
+    : _textTrainingMode === 'finetune'
+    ? 'You taught it your style on top of what it already knew.'
+    : 'Like comparing one class to all of humanity.';
+  document.getElementById('cmpStudyXfer').textContent = studyContext;
+  document.getElementById('cmpStudyXfer').style.display = '';
+  _setCmpRatio('cmpStudyRatio', _cmpRatioLine(_nData, bigStudy.count, 'more examples'));
 
-  // ⏱️ Time training
-  const durStr = _fmtDur(dur);
-  document.getElementById('cmpPracStat').textContent =
-    `You: ${durStr} on 1 computer  ·  ChatGPT-4: 3 months on 25,000 computers`;
+  // ── ⏱️ Time training ────────────────────────────────────────────────────────
+  const BIG_AI_SECS = {
+    image:      90 * 24 * 3600,   // SD: ~90 days on ~4,000 A100s
+    classifier: 7  * 24 * 3600,   // ViT: ~7 days on TPU pods
+    text:       90 * 24 * 3600,   // GPT-4: ~90 days on ~25,000 A100s
+  };
+  const BIG_AI_HW = {
+    image:      '~4,000 A100 GPUs',
+    classifier: '~1,000 TPU v3 chips',
+    text:       '~25,000 A100 GPUs',
+  };
+  const bigSecs   = BIG_AI_SECS[_mode] || BIG_AI_SECS.text;
+  const yourSecs  = dur / 1000;
+  const BIG_AI_NAME = { image: 'Stable Diffusion', classifier: 'ViT-G/14', text: 'GPT-4' };
+  const bigHW     = BIG_AI_HW[_mode] || BIG_AI_HW.text;
+  document.getElementById('cmpPracStat').innerHTML =
+    `You: <strong>${_cmpFmtSeconds(yourSecs)}</strong> on 1 computer`
+    + `<br><span style="color:var(--muted);font-size:.88em;">${BIG_AI_NAME[_mode] || 'GPT-4'}: <strong>~${_cmpFmtSeconds(bigSecs)}</strong> on ${bigHW}</span>`;
+  _setCmpRatio('cmpPracRatio', _cmpRatioLine(yourSecs, bigSecs, 'longer'));
 
-  // ⚡ Energy used (~25 W laptop during training)
-  const energyWh = (dur / 1000) * 25 / 3600;
-  const energyStr = energyWh < 0.001
-    ? `${(energyWh * 1e6).toFixed(0)} µWh`
-    : energyWh < 1
-    ? `${(energyWh * 1000).toFixed(1)} mWh`
-    : `${energyWh.toFixed(2)} Wh`;
-  document.getElementById('cmpEnergyStat').textContent =
-    `You: ~${energyStr} on 1 laptop  ·  GPT-4 training: ~50,000,000 kWh`;
-  document.getElementById('cmpEnergyXfer').textContent =
-    'Like comparing a candle to powering a city for a week.';
+  // ── ⚡ Energy used (~25 W laptop) — both in kWh ───────────────────────────
+  const BIG_AI_KWH = { image: 200000, classifier: 50000, text: 50000000 };
+  const yourKwh = (dur / 1000) * 25 / 3600 / 1000;   // Wh → kWh
+  const bigKwh  = BIG_AI_KWH[_mode] || BIG_AI_KWH.text;
+  const BIG_AI_ENERGY_CTX = {
+    image:      '≈ powering 20 homes for a year',
+    classifier: '≈ powering 5 homes for a year',
+    text:       '≈ powering 4,500 homes for a year',
+  };
+  document.getElementById('cmpEnergyStat').innerHTML =
+    `You: <strong>~${_cmpFmtKwh(yourKwh)}</strong> <span style="color:var(--muted);font-size:.85em;">(${_cmpEnergyContext(yourKwh)})</span>`
+    + `<br><span style="color:var(--muted);font-size:.88em;">${BIG_AI_NAME[_mode] || 'GPT-4'} training: <strong>~${_cmpFmtKwh(bigKwh)}</strong> <span style="font-size:.85em;">(${BIG_AI_ENERGY_CTX[_mode] || BIG_AI_ENERGY_CTX.text})</span></span>`;
+  const cmpEnergyXfer = document.getElementById('cmpEnergyXfer');
+  const energyRatio = yourKwh > 0 ? Math.round(bigKwh / yourKwh) : 0;
+  const energyRatioFmt = energyRatio >= 1e9 ? (energyRatio/1e9).toFixed(1)+'B'
+                       : energyRatio >= 1e6 ? (energyRatio/1e6).toFixed(1)+'M'
+                       : energyRatio >= 1e3 ? (energyRatio/1e3).toFixed(1)+'K'
+                       : energyRatio.toLocaleString();
+  cmpEnergyXfer.textContent = energyRatio > 0
+    ? `Big AI used ~${energyRatioFmt}× more energy — same learning process, completely different scale.`
+    : 'Like comparing a candle to powering a city for a week.';
+  cmpEnergyXfer.style.display = '';
+  _setCmpRatio('cmpEnergyRatio', _cmpRatioLine(yourKwh, bigKwh, 'more energy'));
 
-  // 🪞 Summary
-  document.getElementById('cmpSummary').textContent =
-    '🪞 Your model is small but real. Same recipe as the big ones — just less data and less practice.';
-
-  document.getElementById('compareCard').classList.remove('hidden');
+  // ── 🪞 Summary ─────────────────────────────────────────────────────────────
 }
 
 // ── Training mode picker ───────────────────────────────────────────────────────
@@ -5366,21 +6838,6 @@ function bldStopBot() {
 
 // ── Init ───────────────────────────────────────────────────────────────────────
 _initAllViz();
-// Progressive parameter reveal (either change current parameter or click Next).
-['epochsGroup','lrGroup','latentGroup','scratchParams','finetuneParams','augGroup','batchGroup'].forEach(id => {
-  const grp = document.getElementById(id);
-  if (!grp || grp.querySelector('.param-next-btn')) return;
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'btn btn-secondary btn-sm param-next-btn';
-  btn.textContent = 'Next →';
-  btn.onclick = () => _nextParamFrom(id);
-  grp.appendChild(btn);
-});
-document.getElementById('setupParamsCol')?.addEventListener('input', (e) => {
-  const grp = e.target.closest('.hyper-group');
-  if (grp?.id) _touchParam(grp.id);
-});
 _render();
 </script>
 </body>

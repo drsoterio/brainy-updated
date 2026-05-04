@@ -12,10 +12,29 @@ import os
 os.environ.setdefault('TOKENIZERS_PARALLELISM', 'false')
 
 import time
+import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 
 _MODEL_NAME = 'distilgpt2'
+
+
+def _pca2d(arr: np.ndarray) -> list:
+    """arr: (N, D) float. Returns [[x, y], ...] normalized to [-1, 1]."""
+    arr = arr - arr.mean(axis=0, keepdims=True)
+    n, d = arr.shape
+    if n < 2 or d < 1:
+        return [[0.0, 0.0]] * n
+    _, _, Vt = np.linalg.svd(arr, full_matrices=False)
+    proj = arr @ Vt[:min(2, d)].T
+    if proj.shape[1] < 2:
+        proj = np.hstack([proj, np.zeros((n, 1))])
+    out = proj[:, :2].astype(float)
+    for j in range(2):
+        col = out[:, j]; lo, hi = col.min(), col.max(); rng = hi - lo
+        if rng > 1e-8:
+            out[:, j] = (col - lo) / rng * 2 - 1
+    return out.tolist()
 
 
 class _TextDataset(Dataset):
@@ -204,11 +223,31 @@ class FinetuneTrainer:
             self.trained = True
             final_sample = self._sample(max_new_tokens=50, temperature=0.9)
 
+            # PCA on GPT-2 hidden states for each training text
+            pca_points: list = []
+            pca_labels: list = []
+            try:
+                self._model.eval()
+                hiddens = []
+                with torch.no_grad():
+                    for text in self._texts:
+                        ids = self._tokenizer.encode(text, return_tensors='pt').to(self.device)
+                        out = self._model.transformer(ids)
+                        h = out.last_hidden_state.mean(1).squeeze(0).float().cpu().numpy()
+                        hiddens.append(h)
+                if len(hiddens) >= 2:
+                    pca_points = _pca2d(np.array(hiddens, dtype=np.float32))
+                    pca_labels = [f'text {i+1}' for i in range(len(hiddens))]
+            except Exception:
+                pass
+
             yield {
-                'phase':    'done',
-                'sample':   final_sample,
-                'history':  self.history,
-                'n_params': n_params,
+                'phase':      'done',
+                'sample':     final_sample,
+                'history':    self.history,
+                'n_params':   n_params,
+                'pca_points': pca_points,
+                'pca_labels': pca_labels,
             }
 
         except Exception as exc:
