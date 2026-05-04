@@ -1881,6 +1881,7 @@
         <div class="cmp-section">
           <div class="cmp-sh">⏱️ Time training</div>
           <div class="cmp-stat" id="cmpPracStat">—</div>
+          <div class="cmp-xfer" id="cmpPracXfer" style="display:none;">—</div>
         </div>
         <div class="cmp-section" style="border-bottom:none;">
           <div class="cmp-sh">⚡ Energy used</div>
@@ -5715,6 +5716,14 @@ function _fillCompareCard() {
   document.getElementById('cmpPracStat').innerHTML =
     `You: <strong>${_cmpFmtSeconds(yourSecs)}</strong> on 1 computer`
     + `<br><span style="color:var(--muted);font-size:.88em;">${BIG_AI_NAME[_mode] || 'GPT-4'}: <strong>~${_cmpFmtSeconds(bigSecs)}</strong> on ${bigHW}</span>`;
+  const BIG_AI_TIME_CTX = {
+    image:      `Stable Diffusion ran on ~4,000 GPUs for 3 months straight. You trained the same type of model in minutes, on your own computer.`,
+    classifier: `ViT-G/14 ran on TPU pods for a week. You built a working image classifier in seconds.`,
+    text:       `ChatGPT ran on ~25,000 computers for 3 months straight. You trained the same kind of model in minutes, on your own computer.`,
+  };
+  const pracXfer = document.getElementById('cmpPracXfer');
+  pracXfer.textContent = BIG_AI_TIME_CTX[_mode] || BIG_AI_TIME_CTX.text;
+  pracXfer.style.display = '';
   _setCmpRatio('cmpPracRatio', _cmpRatioLine(yourSecs, bigSecs, 'longer'));
 
   // ── ⚡ Energy used (~25 W laptop) — both in kWh ───────────────────────────
