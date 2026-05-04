@@ -257,12 +257,20 @@
       overflow: hidden; display: flex; align-items: center; justify-content: center;
       flex: 1; min-height: 168px; width: 100%;
     }
-    /* Train-tab canvas: locked to fixed height — never grows with content */
-    #imgPreviewWrap .preview-frame { height: 280px; flex: none; min-height: unset; }
+    /* Train-tab canvas: square 2×2 preview, capped at 45vh so it never overflows the screen */
+    #imgPreviewWrap .preview-frame {
+      width: 100%; height: auto; aspect-ratio: 1;
+      max-width: min(45vh, 500px); max-height: min(45vh, 500px);
+      margin: 0 auto; flex: none; min-height: unset;
+    }
     .preview-frame img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; display: block; }
-    /* Live training preview cells — CSS grid, tiles fill full width+height */
-    #prevGrid { display: grid; width: 100%; height: 100%; gap: 2px; padding: 4px; box-sizing: border-box; }
+    /* Live training preview cells — always 2×2 grid */
+    #prevGrid { display: grid; width: 100%; height: 100%; gap: 3px; padding: 4px; box-sizing: border-box; grid-template-columns: repeat(2,1fr); grid-template-rows: repeat(2,1fr); }
     #prevGrid canvas { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+    /* AI term tooltips */
+    .ai-tip-wrap { position: relative; display: inline; border-bottom: 1px dotted var(--primary-mid); cursor: help; }
+    .ai-tip-wrap .ai-tip { display: none; position: absolute; bottom: 115%; left: 0; min-width: 220px; max-width: 300px; background: var(--card); border: 1.5px solid var(--border); border-radius: 10px; padding: 9px 11px; font-size: .75rem; line-height: 1.5; font-weight: 400; color: var(--text); z-index: 999; box-shadow: 0 4px 20px rgba(0,0,0,.4); pointer-events: none; white-space: normal; }
+    .ai-tip-wrap:hover .ai-tip { display: block; }
     .preview-ph { color: var(--muted); font-size: 1rem; text-align: center; padding: 30px; line-height: 1.6; }
 
     /* Webcam */
@@ -555,6 +563,9 @@
     .cmp-narrative .cmp-narrative-close { font-size: .76rem; color: var(--primary-dark); font-style: italic; border-top: 1px solid var(--border); padding-top: 7px; margin-top: 5px; }
     /* Recon bar chart */
     .cmp-recon-wrap { margin-top: 8px; }
+    .cmp-recon-wrap summary::-webkit-details-marker { display: none; }
+    .cmp-recon-wrap[open] summary span:first-child { transform: rotate(90deg); }
+    .cmp-recon-wrap summary span:first-child { display: inline-block; transition: transform .2s; }
     .cmp-recon-title { font-size: .75rem; font-weight: 700; margin-bottom: 5px; color: var(--text); }
     .cmp-recon-bar-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
     .cmp-recon-bar-label { font-size: .68rem; color: var(--muted); min-width: 36px; text-align: right; flex-shrink: 0; }
@@ -1340,6 +1351,7 @@
               <img id="prevImg" class="hidden" src="" alt="preview">
             </div>
             <div id="imgTrainCaption" class="hidden" style="font-size:.82rem;color:var(--primary-dark);font-weight:600;text-align:center;padding:6px 4px;line-height:1.4;background:var(--primary-lite);border-radius:0 0 10px 10px;border:1px solid var(--primary-mid);border-top:none;"></div>
+            <div id="previewBatchCaption" class="hidden" style="font-size:.74rem;color:var(--muted);text-align:center;padding:3px 4px;margin-top:2px;"></div>
           </div>
 
           <!-- Text preview -->
@@ -1490,11 +1502,12 @@
               </div>
             </div>
 
-            <!-- Latent walk -->
-            <div id="interpWrap" class="hidden">
-              <div class="panel-title" style="margin-top:14px;margin-bottom:2px;">Latent Space Walk</div>
-              <div style="font-size:.78rem;color:var(--muted);margin-bottom:6px;line-height:1.4;">The model's internal creative map — each frame is a smooth step between two random points in the space of all patterns it has learned. Gradual changes = the model has learned smooth, meaningful structure.</div>
-              <img id="interpStrip" class="interp-strip" src="" alt="interpolation">
+            <!-- Latent walk — auto-shown after training/loading; regenerate button inside -->
+            <div id="interpWrap" class="hidden" style="margin-top:10px;">
+              <div class="panel-title" style="margin-bottom:3px;">🗺️ Latent Space Walk</div>
+              <div style="font-size:.78rem;color:var(--muted);margin-bottom:7px;line-height:1.4;">The model's internal creative map — each frame is a smooth step between two random points in the space of all patterns it has learned. <strong>Gradual changes = the model has learned smooth, meaningful structure.</strong></div>
+              <img id="interpStrip" class="interp-strip" src="" alt="interpolation" style="transition:opacity .3s;">
+              <button class="btn btn-secondary btn-sm" onclick="exploreLatent()" style="margin-top:7px;width:100%;">🔄 New walk</button>
             </div>
           </div>
 
@@ -1921,7 +1934,8 @@
     </div>
 
     <div id="compareCard" style="flex-shrink:0;border-top:1px solid var(--border);padding-top:10px;margin-top:4px;">
-      <div class="panel-title" style="margin-bottom:6px;">📊 Your Model vs Big AI</div>
+      <div class="panel-title" style="margin-bottom:4px;">📊 Your Model vs <span id="cmpAiTitle">Big AI</span></div>
+      <div style="font-size:.73rem;color:var(--muted);line-height:1.4;margin-bottom:7px;font-style:italic;">Your model is small on purpose. Big AI uses staggering scale — that's what makes the comparison interesting.</div>
       <div style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;">
         <div class="cmp-section">
           <div class="cmp-sh">🧠 Brain size</div>
@@ -1944,6 +1958,7 @@
           <div class="cmp-xfer" id="cmpEnergyXfer" style="display:none;">—</div>
         </div>
       </div>
+      <div id="cmpCycleWrap" style="text-align:center;margin-top:7px;"></div>
     </div>
 
     <div id="smartExplainCard" class="hidden" style="flex-shrink:0;">
@@ -2454,6 +2469,7 @@ let _txtItems      = [];
 let _imgThumbs     = [];
 let _imgDataUrls   = [];   // full base64 originals, kept for fork re-upload
 let _loadedModelId = null;  // ID of brain loaded from Library — used to overwrite on re-save
+let _cmpCycleIdx  = 0;     // which commercial AI is shown in the compare card (cycles on demand)
 
 const _EMOJI_TYPE = {
   image_generator: '🎨', text_generator: '✍️',
@@ -2475,6 +2491,7 @@ function goNext() { goTo(_step + 1); }
 function goBack() { goTo(_step - 1); }
 
 let _libActiveTab = 'brains';
+let _libEntries   = [];   // cached from last _fetchLibGrid call
 
 function openLearn() {
   if (_step === 1 && _camStream) stopCam();
@@ -2581,6 +2598,34 @@ async function loadBotFromLib(id) {
   _bBrain    = bot.brain   || null;
   _bOutputs  = bot.outputs || [];
   _bRules    = bot.rules   || [];
+  // Seed training session from bot's brain stats so Training Activity and
+  // compare panel are populated if the user navigates to brain tabs
+  const brain = _bBrain;
+  if (brain) {
+    const bStats = brain.training_stats || {};
+    const bMode  = brain.model_type === 'image_generator' ? 'image'
+                 : brain.model_type === 'classifier'       ? 'classifier' : 'text';
+    _nParams     = bStats.n_params       || 0;
+    _nData       = bStats.dataset_size   || 0;
+    _finalLoss   = bStats.final_loss     ?? null;
+    _trainTimeMs = bStats.duration_seconds ? Math.round(bStats.duration_seconds * 1000) : 0;
+    _tsReset();
+    _tsIdCounter = 1;
+    _tsSessions  = [{
+      id: 1, num: 1,
+      uploadCount: _nData, uploadTs: null,
+      params: brain.training_params || null,
+      status: 'complete',
+      startTs: null, endTs: Date.now(),
+      loss: _finalLoss, durationMs: _trainTimeMs || null,
+      budgetReached: false, actualEpochs: null,
+      collapsed: false, lossHistory: [], compare: null, sample: null,
+      metrics: (bMode === 'image') ? {
+        lossInitial: null, lossFinal: _finalLoss,
+        lossReductionPct: null, diversity: null, reconErrors: [], sharpness: null,
+      } : null,
+    }];
+  }
   closeLibrary();
   goTo(4);
 }
@@ -3471,6 +3516,8 @@ function _resetPreview() {
   prevGrid.classList.add('hidden');
   prevGrid.innerHTML = '';
   document.getElementById('prevPH').classList.remove('hidden');
+  document.getElementById('previewBatchCaption')?.classList.add('hidden');
+  document.getElementById('interpWrap')?.classList.add('hidden');
   document.getElementById('txtSampleBox').textContent = 'Train your model to see generated text here ✨';
   document.getElementById('txtSampleBox').classList.remove('has-text');
   document.getElementById('progFill').style.width = '0%';
@@ -3639,6 +3686,11 @@ function startTraining() {
           ? `Epoch ${ep} — The model is learning shapes and edges.`
           : `Epoch ${ep} — The model is refining details.`;
       }
+      const batchCap = document.getElementById('previewBatchCaption');
+      if (batchCap) {
+        batchCap.classList.remove('hidden');
+        batchCap.textContent = `Showing 4 sample outputs each epoch. The model trains on batches of ${batchN}.`;
+      }
     }
     if (_mode === 'text' && d.sample) {
       const box = document.getElementById('txtSampleBox');
@@ -3709,6 +3761,7 @@ function startTraining() {
     } else if (!isSmart) {
       _updateCurveExplain();
       _fillCompareCard();
+      if (_mode === 'image') exploreLatent();
     }
 
     _clearStall();
@@ -3782,24 +3835,22 @@ function _cleanup() {
   document.getElementById('stopBtn').classList.add('hidden');
 }
 
-// ── Live preview grid (exactly batch_size cells sliced from backend PNG) ────────
+// ── Live preview grid (fixed 2×2, always 4 tiles sampled from the batch PNG) ────
 function _renderPreviewCells(b64, n, cellSize) {
   const grid = document.getElementById('prevGrid');
   const img  = new Image();
   img.onload = () => {
     grid.innerHTML = '';
-    const cols = Math.round(img.width / cellSize) || 1;
-    const rows = Math.ceil(n / cols);
-    // CSS grid fills the fixed-height parent; tiles auto-size to their cells
-    grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-    grid.style.gridTemplateRows    = `repeat(${rows}, 1fr)`;
-    for (let i = 0; i < n; i++) {
+    const srcCols = Math.round(img.width / cellSize) || 1;
+    // Always render exactly 4 tiles in 2×2 layout, sampling from the batch
+    const TILES = Math.min(4, n);
+    for (let i = 0; i < TILES; i++) {
       const c   = document.createElement('canvas');
       c.width   = cellSize;
       c.height  = cellSize;
       const ctx = c.getContext('2d');
-      const col = i % cols, row = Math.floor(i / cols);
-      ctx.drawImage(img, col * cellSize, row * cellSize, cellSize, cellSize, 0, 0, cellSize, cellSize);
+      const srcCol = i % srcCols, srcRow = Math.floor(i / srcCols);
+      ctx.drawImage(img, srcCol * cellSize, srcRow * cellSize, cellSize, cellSize, 0, 0, cellSize, cellSize);
       grid.appendChild(c);
     }
   };
@@ -4052,11 +4103,17 @@ async function generateImages() {
 }
 
 async function exploreLatent() {
-  const res = await fetch('/api/generate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({type: 'interpolate', steps: 10}) });
-  const d   = await res.json();
-  if (!d.ok) { alert(d.error); return; }
-  document.getElementById('interpStrip').src = 'data:image/png;base64,' + d.strip;
-  document.getElementById('interpWrap').classList.remove('hidden');
+  const wrap  = document.getElementById('interpWrap');
+  const strip = document.getElementById('interpStrip');
+  wrap.classList.remove('hidden');
+  strip.style.opacity = '0.25';
+  try {
+    const res = await fetch('/api/generate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({type: 'interpolate', steps: 10}) });
+    const d   = await res.json();
+    if (!d.ok) { wrap.classList.add('hidden'); return; }
+    strip.src = 'data:image/png;base64,' + d.strip;
+    strip.style.opacity = '1';
+  } catch { wrap.classList.add('hidden'); }
 }
 
 // ── Test — generate text ───────────────────────────────────────────────────────
@@ -4428,17 +4485,58 @@ function _renderReconBars(errors, accentColor) {
       <div class="cmp-recon-bar-val">${(e * 1000).toFixed(1)}‰</div>
     </div>`;
   }).join('');
-  return `<div class="cmp-recon-wrap">
-    <div class="cmp-recon-title">Reconstruction error per image</div>
-    ${rows}
-  </div>`;
+  return `<details class="cmp-recon-wrap">
+    <summary class="cmp-recon-title" style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:5px;user-select:none;">
+      <span style="font-size:.7rem;color:var(--muted);">▶</span> Reconstruction error per image
+    </summary>
+    <div style="margin-top:5px;">${rows}</div>
+  </details>`;
 }
 
 function _genNarrative(older, newer) {
   const mo = older.metrics, mn = newer.metrics;
-  const bullets = [];
 
-  // Loss improvement
+  // ── Structured delta table ─────────────────────────────────────────────────
+  function _pctTag(pct) {
+    if (pct == null) return '';
+    const sign = pct > 0 ? '+' : '';
+    const col  = pct > 0 ? 'color:#16a34a' : pct < 0 ? 'color:#dc2626' : 'color:var(--muted)';
+    return `<span style="font-size:.72rem;font-weight:700;${col}">${sign}${pct}%</span>`;
+  }
+  function _deltaRow(label, oldVal, newVal, fmtFn, higherIsBetter) {
+    if (oldVal == null || newVal == null) return '';
+    const pct = oldVal !== 0 ? Math.round((newVal - oldVal) / Math.abs(oldVal) * 100) : null;
+    const dir = higherIsBetter ? (newVal > oldVal ? 1 : newVal < oldVal ? -1 : 0)
+                               : (newVal < oldVal ? 1 : newVal > oldVal ? -1 : 0);
+    const arrow = dir > 0 ? '↑' : dir < 0 ? '↓' : '→';
+    const arrowCol = dir > 0 ? '#16a34a' : dir < 0 ? '#dc2626' : 'var(--muted)';
+    return `<tr>
+      <td style="padding:3px 6px;font-size:.76rem;color:var(--muted);">${label}</td>
+      <td style="padding:3px 6px;font-size:.76rem;">${fmtFn(oldVal)}</td>
+      <td style="padding:3px 6px;font-size:.76rem;font-weight:600;">${fmtFn(newVal)} <span style="color:${arrowCol}">${arrow}</span></td>
+      <td style="padding:3px 6px;">${_pctTag(pct)}</td>
+    </tr>`;
+  }
+
+  const exRows  = older.uploadCount != null && newer.uploadCount != null
+    ? `<tr><td style="padding:3px 6px;font-size:.76rem;color:var(--muted);">Examples</td><td style="padding:3px 6px;font-size:.76rem;">${older.uploadCount}</td><td style="padding:3px 6px;font-size:.76rem;font-weight:600;">${newer.uploadCount} <span style="color:${newer.uploadCount > older.uploadCount ? '#16a34a' : 'var(--muted)'}">↑</span></td><td style="padding:3px 6px;">${_pctTag(older.uploadCount > 0 ? Math.round((newer.uploadCount - older.uploadCount) / older.uploadCount * 100) : null)}</td></tr>` : '';
+  const lossRow = _deltaRow('Final loss',       mo.lossFinal,  mn.lossFinal,  v => v.toFixed(3), false);
+  const divRow  = _deltaRow('Sample diversity', mo.diversity,  mn.diversity,  v => v.toFixed(3), true);
+  const shrpRow = _deltaRow('Sharpness score',  mo.sharpness,  mn.sharpness,  v => v.toFixed(1), true);
+
+  const deltaTable = (exRows || lossRow || divRow || shrpRow)
+    ? `<table style="width:100%;border-collapse:collapse;margin-bottom:6px;">
+        <thead><tr>
+          <th style="padding:3px 6px;font-size:.72rem;color:var(--muted);text-align:left;font-weight:600;">Metric</th>
+          <th style="padding:3px 6px;font-size:.72rem;color:var(--muted);text-align:left;font-weight:600;">Training ${older.num}</th>
+          <th style="padding:3px 6px;font-size:.72rem;color:var(--muted);text-align:left;font-weight:600;">Training ${newer.num}</th>
+          <th style="padding:3px 6px;font-size:.72rem;color:var(--muted);text-align:left;font-weight:600;">Change</th>
+        </tr></thead>
+        <tbody>${exRows}${lossRow}${divRow}${shrpRow}</tbody>
+      </table>` : '';
+
+  // ── Narrative bullets ──────────────────────────────────────────────────────
+  const bullets = [];
   if (mo.lossFinal != null && mn.lossFinal != null) {
     const delta = mo.lossFinal - mn.lossFinal;
     if (delta > 0.001) {
@@ -4449,8 +4547,6 @@ function _genNarrative(older, newer) {
       bullets.push(`Loss stayed roughly the same (${mo.lossFinal.toFixed(3)} vs ${mn.lossFinal.toFixed(3)}).`);
     }
   }
-
-  // Loss reduction within each run
   if (mo.lossReductionPct != null && mn.lossReductionPct != null) {
     const olderRed = mo.lossReductionPct, newerRed = mn.lossReductionPct;
     if (Math.abs(newerRed - olderRed) >= 5) {
@@ -4458,37 +4554,41 @@ function _genNarrative(older, newer) {
       bullets.push(`The ${better} training reduced loss more within its run (${newerRed}% vs ${olderRed}%).`);
     }
   }
-
-  // Diversity
   if (mo.diversity != null && mn.diversity != null) {
     const dDelta = mn.diversity - mo.diversity;
     if (Math.abs(dDelta) >= 0.005) {
       const dir = dDelta > 0 ? 'more diverse' : 'less diverse';
       bullets.push(`Generated images are ${dir} in the newer training (diversity ${mn.diversity.toFixed(3)} vs ${mo.diversity.toFixed(3)}).`);
-    } else {
-      bullets.push(`Sample diversity is similar across both trainings (${mn.diversity.toFixed(3)} vs ${mo.diversity.toFixed(3)}).`);
     }
   }
 
-  // Closing sentence
+  // ── Closing sentence based on magnitude of improvement ────────────────────
   const lossImproved   = mo.lossFinal != null && mn.lossFinal != null && mn.lossFinal < mo.lossFinal - 0.001;
   const divImproved    = mo.diversity != null && mn.diversity != null && mn.diversity > mo.diversity + 0.005;
   const lossDeterior   = mo.lossFinal != null && mn.lossFinal != null && mn.lossFinal > mo.lossFinal + 0.001;
-  let closing = '';
-  if (lossImproved && divImproved) {
-    closing = 'More data or training time helped — the model learned more varied structure.';
+  const lossImprovePct = (mo.lossFinal > 0 && lossImproved)
+    ? Math.round((mo.lossFinal - mn.lossFinal) / mo.lossFinal * 100) : 0;
+
+  let closing;
+  if (lossImprovePct > 30) {
+    closing = `Big improvement! (${lossImprovePct}% lower loss) — more data is paying off.`;
+  } else if (lossImprovePct >= 10) {
+    closing = `Real improvement (${lossImprovePct}% lower loss), but still bounded by dataset size. More images would push it further.`;
+  } else if (lossImproved && divImproved) {
+    closing = `Improvements are small but real. With small datasets, gains often stay subtle until you 10× or 100× the data — that's the scale where image generators become photo-realistic.`;
   } else if (lossImproved) {
-    closing = 'The model reconstructs images more faithfully now. Try more trainings to see if diversity also grows.';
+    closing = `Differences are small. With small datasets, subtle improvements are the honest reality — not a bug. Try 10× more images to see bigger jumps.`;
   } else if (lossDeterior) {
-    closing = 'Try adding more images or increasing epochs — the model may need more signal.';
+    closing = `Try adding more images or increasing epochs — the model may need more signal.`;
   } else {
-    closing = 'Trainings are comparable. Experiment with more images or different settings to push further.';
+    closing = `Trainings are comparable. Experiment with more images or different settings to push further.`;
   }
 
-  if (bullets.length === 0) return '';
+  if (!deltaTable && bullets.length === 0) return '';
 
-  return `<div class="cmp-narrative-title">🔍 What changed between Training ${older.num} and Training ${newer.num}?</div>
-    <ul>${bullets.map(b => `<li>${b}</li>`).join('')}</ul>
+  return `<div class="cmp-narrative-title">📊 What changed between Training ${older.num} and Training ${newer.num}?</div>
+    ${deltaTable}
+    ${bullets.length > 0 ? `<ul>${bullets.map(b => `<li>${b}</li>`).join('')}</ul>` : ''}
     <div class="cmp-narrative-close">${closing}</div>`;
 }
 
@@ -4630,8 +4730,9 @@ function _tsComplete(loss, durationMs, budgetReached, actualEpochs, metrics) {
   s.actualEpochs  = actualEpochs || null;
   s.collapsed     = true;
   // Capture per-session snapshots (UI-only, in-memory)
-  s.lossHistory = [..._lossHist];
-  s.compare     = _tsSnapshotCompare(durationMs || 0);
+  s.lossHistory    = [..._lossHist];
+  s.epochSnapshots = [..._epochSnapshots];
+  s.compare        = _tsSnapshotCompare(durationMs || 0);
   const imgEl  = document.getElementById('prevImg');
   const txtEl  = document.getElementById('txtSampleBox');
   s.sample = _mode === 'image'
@@ -4649,7 +4750,32 @@ function _tsComplete(loss, durationMs, budgetReached, actualEpochs, metrics) {
       lossReductionPct,
       diversity:    metrics.diversity   ?? null,
       reconErrors:  metrics.reconErrors ?? [],
+      sharpness:    null,
     };
+    // Compute Laplacian-variance sharpness from the final sample grid image
+    const imgEl = document.getElementById('prevImg');
+    if (imgEl && !imgEl.classList.contains('hidden') && imgEl.naturalWidth > 0) {
+      try {
+        const sc = document.createElement('canvas');
+        sc.width  = imgEl.naturalWidth;
+        sc.height = imgEl.naturalHeight;
+        const sCtx = sc.getContext('2d');
+        sCtx.drawImage(imgEl, 0, 0);
+        const px = sCtx.getImageData(0, 0, sc.width, sc.height).data;
+        const W  = sc.width, H = sc.height;
+        const gray = new Float32Array(W * H);
+        for (let k = 0; k < W * H; k++) gray[k] = 0.299*px[k*4] + 0.587*px[k*4+1] + 0.114*px[k*4+2];
+        let sum = 0, sumSq = 0, cnt = 0;
+        for (let y = 1; y < H-1; y++) {
+          for (let x = 1; x < W-1; x++) {
+            const lap = 4*gray[y*W+x] - gray[(y-1)*W+x] - gray[(y+1)*W+x] - gray[y*W+(x-1)] - gray[y*W+(x+1)];
+            sum += lap; sumSq += lap*lap; cnt++;
+          }
+        }
+        const mean = sum / cnt;
+        s.metrics.sharpness = Math.round((sumSq/cnt - mean*mean) * 10) / 10;
+      } catch(_) { /* sharpness stays null */ }
+    }
   }
   _tsRenderSessions();
 }
@@ -4666,6 +4792,7 @@ function _tsError() {
 function _tsReset() {
   _tsSessions  = [];
   _tsIdCounter = 0;
+  _cmpCycleIdx = 0;
   if (_tsAgeTimer) { clearInterval(_tsAgeTimer); _tsAgeTimer = null; }
 }
 
@@ -5475,6 +5602,23 @@ async function saveBrainToLibrary() {
     payload.batch_size = parseInt(_chips.txtBatch || '4');
   }
 
+  // Serialize complete sessions; cap epochSnapshots to 8 evenly-spaced frames to limit size
+  const _capSnaps = snaps => {
+    if (!snaps || snaps.length <= 8) return snaps || [];
+    const step = (snaps.length - 1) / 7;
+    return Array.from({length: 8}, (_, i) => snaps[Math.round(i * step)]);
+  };
+  payload.sessions = _tsSessions
+    .filter(s => s.status === 'complete')
+    .map(s => {
+      const out = { ...s, epochSnapshots: _capSnaps(s.epochSnapshots) };
+      // Strip data URL prefix from sample — backend stores raw base64
+      if (typeof out.sample === 'string' && out.sample.startsWith('data:')) {
+        out.sample = out.sample.split(',').slice(1).join(',');
+      }
+      return out;
+    });
+
   const res  = await fetch('/api/save', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
   const data = await res.json();
 
@@ -5598,13 +5742,27 @@ async function _fetchLibGrid() {
   const res  = await fetch('/api/library');
   const data = await res.json();
   if (!data.ok || !data.entries.length) {
+    _libEntries = [];
     grid.innerHTML = '<div style="grid-column:1/-1;color:var(--muted);font-size:.88rem;text-align:center;padding:60px 20px;">No saved models yet — train one and save it!</div>';
     if (count) count.textContent = '';
     return;
   }
+  _libEntries = data.entries;
   if (count) count.textContent = '(' + data.entries.length + ')';
   grid.innerHTML = data.entries.map(_fmtLibCard).join('');
   _loadAllPreviews(data.entries);
+}
+
+function assignBehaviorFromLib(id) {
+  const entry = _libEntries.find(e => e.id === id);
+  closeLibrary();
+  goTo(4);
+  if (entry) {
+    _bBrain = entry;
+    _bRenderBrain();
+    _bSyncRules();
+    _simBrainLoaded = false;
+  }
 }
 
 function _fmtLibCard(e) {
@@ -5657,6 +5815,9 @@ function _fmtLibCard(e) {
       <button class="btn btn-sm btn-primary" onclick="loadLibModel('${e.id}')" style="flex:1;">Load →</button>
       <button class="btn btn-sm btn-secondary" onclick="startRename('${e.id}')">✏️ Rename</button>
       <button class="btn btn-sm btn-danger" onclick="deleteLibModel('${e.id}')">🗑️</button>
+    </div>
+    <div style="padding:0 12px 12px;">
+      <button class="btn btn-sm btn-secondary" style="width:100%;font-weight:700;" onclick="assignBehaviorFromLib('${e.id}')">🔧 Assign Behavior →</button>
     </div>
   </div>`;
 }
@@ -5781,33 +5942,95 @@ async function loadLibModel(id) {
   const res  = await fetch('/api/load', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id}) });
   const data = await res.json();
   if (!data.ok) { alert('Load failed: ' + data.error); return; }
+
+  const entry   = data.entry || {};
+  const stats   = entry.training_stats || {};
+  const isSmart = (data.training_mode || 'scratch') === 'smart_prompt';
+
   _mode             = data.mode;
   _textTrainingMode = data.training_mode || 'scratch';
   _inputMode        = data.input_mode    || 'image';
-  _loadedModelId    = (data.entry || {}).id || null;
+  _loadedModelId    = entry.id || null;
+
+  // Seed client state from saved stats so sidebar/compare panel render immediately
+  _nParams      = stats.n_params       || 0;
+  _nData        = stats.dataset_size   || 0;
+  _finalLoss    = stats.final_loss     ?? null;
+  _trainTimeMs  = stats.duration_seconds ? Math.round(stats.duration_seconds * 1000) : 0;
+  _trainedEpochs = (entry.training_params?.epochs) || 0;
+
   if (_mode === 'classifier') {
     _clfTrainingMode = (data.training_mode === 'scratch' || data.training_mode === 'finetune')
-      ? data.training_mode
-      : 'finetune';
-    const meta = data.entry || {};
-    _clfLabels  = meta.labels || [];
-    _clfCounts  = Object.fromEntries(_clfLabels.map(l => [l, 0]));
-    _finalAccuracy = meta.training_stats?.final_accuracy ?? null;
+      ? data.training_mode : 'finetune';
+    _clfLabels     = entry.labels || [];
+    _clfCounts     = Object.fromEntries(_clfLabels.map(l => [l, 0]));
+    _finalAccuracy = stats.final_accuracy ?? null;
   }
   _trained = true;
+
+  // Restore full training history if persisted, otherwise synthesize a baseline session
+  _tsReset();
+  const _synthSession = {
+    id: 1, num: 1,
+    uploadCount: _nData, uploadTs: null,
+    params: entry.training_params || null,
+    status: 'complete',
+    startTs: null, endTs: Date.now(),
+    loss: _finalLoss, durationMs: _trainTimeMs || null,
+    budgetReached: false, actualEpochs: null,
+    collapsed: false,
+    lossHistory: [], epochSnapshots: [],
+    compare: _tsSnapshotCompare(_trainTimeMs || 0),
+    sample: null,
+    metrics: (_mode === 'image') ? {
+      lossInitial: null, lossFinal: _finalLoss,
+      lossReductionPct: null, diversity: null, reconErrors: [], sharpness: null,
+    } : null,
+  };
+
+  if (entry.sessions && entry.sessions.length > 0) {
+    _tsSessions = entry.sessions.map(s => {
+      const out = { ...s };
+      // Restore raw base64 sample back to full data URL for image mode
+      if (_mode === 'image' && typeof out.sample === 'string' && out.sample.length > 0 && !out.sample.startsWith('data:')) {
+        out.sample = 'data:image/png;base64,' + out.sample;
+      }
+      return out;
+    });
+    _tsIdCounter = Math.max(..._tsSessions.map(s => s.id || 0), 0);
+    // Restore epoch snapshots from the newest session that has them
+    const latestWithSnaps = _tsSessions.find(s => s.epochSnapshots?.length);
+    if (latestWithSnaps) _epochSnapshots = [...latestWithSnaps.epochSnapshots];
+  } else {
+    _tsIdCounter = 1;
+    _tsSessions  = [_synthSession];
+  }
+
   _applyMode();
+  if (!isSmart) {
+    _fillCompareCard();
+    _tsRenderSessions();
+    _fillComparisonSection();
+    _renderEpochEvolution();
+  }
+
+  // Fetch authoritative counts and overwrite session with real values
   fetch('/api/info').then(r => r.json()).then(d => {
-    _nParams   = d.n_params || 0;
-    _finalLoss = d.loss ?? null;
-    _nData     = d.count  || 0;
+    _nParams   = d.n_params || _nParams;
+    _finalLoss = d.loss     ?? _finalLoss;
+    _nData     = d.count    || _nData;
+    const base = _tsSessions[_tsSessions.length - 1];
+    if (base) { base.uploadCount = _nData; base.loss = _finalLoss; }
     if (_textTrainingMode === 'smart_prompt' && d.viz_2d?.length) _smartVizData = d.viz_2d;
-    if (d.texts && d.texts.length > 0) {
-      _txtItems = d.texts;
-      _renderTxtList();
-    }
+    if (d.texts && d.texts.length > 0) { _txtItems = d.texts; _renderTxtList(); }
+    _nVocab = d.vocab_size || _nVocab;
     _updateCountBadge();
     _syncSetupFlow();
+    if (!isSmart) { _fillCompareCard(); _tsRenderSessions(); _fillComparisonSection(); }
+    if (_step === 2) _fillTestInfo();
+    if (_mode === 'image') exploreLatent();
   });
+
   closeLibrary();
   goTo(2);
 }
@@ -6107,103 +6330,213 @@ function _setCmpRatio(elId, ratioText) {
   el.style.display = ratioText ? '' : 'none';
 }
 
+// ── AI definitions for hover tooltips ─────────────────────────────────────────
+const AI_DEFINITIONS = {
+  'Stable Diffusion':  `<strong>Stable Diffusion</strong> is an image-generating AI by Stability AI (2022). Trained on ~2.3 billion images from the LAION-5B dataset using hundreds of A100 GPUs over several weeks. Generates photorealistic images from text prompts.`,
+  'DALL·E 3':          `<strong>DALL·E 3</strong> is OpenAI's image generator, integrated into ChatGPT. Trained on hundreds of millions of curated image-caption pairs [est.]. Known for following complex prompts more accurately than earlier systems.`,
+  'Midjourney':        `<strong>Midjourney</strong> is a commercial image generator known for its artistic style, available via Discord and web. Training data and parameter count are not publicly disclosed.`,
+  'Flux':              `<strong>Flux</strong> is a state-of-the-art open-weights image generator from Black Forest Labs, released 2024. The Flux.1 models (~12B parameters) outperform many older diffusion models on quality benchmarks.`,
+  'ChatGPT (GPT-4)':   `<strong>ChatGPT (GPT-4)</strong> is OpenAI's flagship chatbot. GPT-4 has an estimated ~1.76 trillion parameters [est.], trained on a massive slice of the internet across ~25,000 A100 GPUs. Training cost an estimated $100M+ and ~50 million kWh.`,
+  'Claude':            `<strong>Claude</strong> is Anthropic's AI assistant, estimated at ~2 trillion parameters [est.]. Trained on a similar scale to GPT-4. Used for chat, writing, and analysis. The exact architecture and training details are not publicly disclosed.`,
+  'Llama 3 70B':       `<strong>Llama 3 70B</strong> is Meta's open-weights language model with 70 billion parameters. Trained on 15 trillion tokens. Free to download and run locally — a rare example of a high-quality large model anyone can use.`,
+  'Gemini Ultra':      `<strong>Gemini Ultra</strong> is Google's most powerful multimodal AI (text, images, audio, video) with an estimated ~540 billion parameters [est.]. Trained on a massive multilingual corpus across Google TPU v4 pods.`,
+  'CLIP':              `<strong>CLIP</strong> (Contrastive Language–Image Pretraining) by OpenAI was trained on 400 million image–text pairs from the internet. It learns to connect visual and language concepts, powering many image-search and generation tools.`,
+  'ResNet-152':        `<strong>ResNet-152</strong> is a classic deep image-classification model (152 layers, 60M parameters) trained on ImageNet's 1.28 million labeled images. It won the 2015 ImageNet challenge and is still widely used as a baseline.`,
+  'Google Vision API': `<strong>Google Vision API</strong> is Google's commercial image-classification and object-detection service. Backed by proprietary models with billions of parameters [est.], trained on billions of images from Google's data infrastructure.`,
+  'BERT':              `<strong>BERT</strong> is Google's 340-million-parameter language model, trained on 3.3 billion words (Wikipedia + BooksCorpus). Powers many Google Search features and is the foundation for hundreds of downstream models.`,
+  'RoBERTa':           `<strong>RoBERTa</strong> (Robustly Optimized BERT) is Meta's improved BERT variant with 355M parameters, trained on 160 billion words. Achieves stronger text-classification results than BERT by training longer on more data.`,
+  'ViT-G/14':          `<strong>ViT-G/14</strong> (Vision Transformer Giant) is Google's large image-classification model with ~1.8 billion parameters. Trained on billions of labeled images using TPU clusters.`,
+  'DistilGPT-2':       `<strong>DistilGPT-2</strong> is a compact version of GPT-2 by HuggingFace (~82M parameters), trained on ~40 billion words of internet text.`,
+  'GPT-4':             `<strong>GPT-4</strong> is OpenAI's most capable language model (~1.76 trillion parameters [est.]). Trained for ~3 months across ~25,000 A100 GPUs, consuming ~50 million kWh.`,
+  'GPT-3':             `<strong>GPT-3</strong> is OpenAI's 175-billion-parameter language model, trained on the equivalent of ~3.75 million books' worth of text.`,
+};
+
+// ── Commercial AI catalog — keyed by brainy model type ────────────────────────
+// Each entry: { name, params, paramsEst, studyCount, studyUnit, studyEst,
+//               trainSecs, trainHW, gpuCount, energyKwh, energyEst }
+const _CMP_AIS = {
+  image: [
+    { name: 'Stable Diffusion', params: 860e6,   paramsEst: false,
+      studyCount: 2.3e9,  studyUnit: 'images',            studyEst: false,
+      trainSecs: 23*86400,  trainHW: '~256 A100 GPUs', gpuCount: 256,
+      energyKwh: 200000,  energyEst: true },
+    { name: 'DALL·E 3',         params: 3e9,     paramsEst: true,
+      studyCount: 650e6,  studyUnit: 'image-caption pairs', studyEst: true,
+      trainSecs: 60*86400,  trainHW: '~10,000 A100 GPUs [est.]', gpuCount: 10000,
+      energyKwh: 500000,  energyEst: true },
+    { name: 'Midjourney',       params: 2e9,     paramsEst: true,
+      studyCount: 1e9,    studyUnit: 'images',            studyEst: true,
+      trainSecs: 45*86400,  trainHW: '~2,000 GPUs [est.]', gpuCount: 2000,
+      energyKwh: 300000,  energyEst: true },
+    { name: 'Flux',             params: 12e9,    paramsEst: true,
+      studyCount: 5e9,    studyUnit: 'images',            studyEst: true,
+      trainSecs: 30*86400,  trainHW: '~8,000 H100 GPUs [est.]', gpuCount: 8000,
+      energyKwh: 600000,  energyEst: true },
+  ],
+  text: [
+    { name: 'ChatGPT (GPT-4)', params: 1.76e12, paramsEst: true,
+      studyCount: 13e12,  studyUnit: 'tokens',            studyEst: false,
+      trainSecs: 90*86400,  trainHW: '~25,000 A100 GPUs', gpuCount: 25000,
+      energyKwh: 50e6,    energyEst: true },
+    { name: 'Claude',          params: 2e12,    paramsEst: true,
+      studyCount: 10e12,  studyUnit: 'tokens',            studyEst: true,
+      trainSecs: 90*86400,  trainHW: '~20,000 A100 GPUs [est.]', gpuCount: 20000,
+      energyKwh: 40e6,    energyEst: true },
+    { name: 'Llama 3 70B',     params: 70e9,    paramsEst: false,
+      studyCount: 15e12,  studyUnit: 'tokens',            studyEst: false,
+      trainSecs: 60*86400,  trainHW: '~16,000 A100 GPUs', gpuCount: 16000,
+      energyKwh: 5e6,     energyEst: true },
+    { name: 'Gemini Ultra',    params: 540e9,   paramsEst: true,
+      studyCount: 6e12,   studyUnit: 'tokens',            studyEst: true,
+      trainSecs: 90*86400,  trainHW: 'Google TPU v4 pods [est.]', gpuCount: 4000,
+      energyKwh: 30e6,    energyEst: true },
+  ],
+  clf_image: [
+    { name: 'CLIP',              params: 400e6,  paramsEst: false,
+      studyCount: 400e6,  studyUnit: 'image-text pairs',  studyEst: false,
+      trainSecs: 18*86400,  trainHW: '~256 V100 GPUs', gpuCount: 256,
+      energyKwh: 10000,   energyEst: true },
+    { name: 'ResNet-152',        params: 60e6,   paramsEst: false,
+      studyCount: 1.28e6, studyUnit: 'labeled images',    studyEst: false,
+      trainSecs: 7*86400,   trainHW: '~128 V100 GPUs', gpuCount: 128,
+      energyKwh: 5000,    energyEst: true },
+    { name: 'Google Vision API', params: 2e9,    paramsEst: true,
+      studyCount: 3e9,    studyUnit: 'images',            studyEst: true,
+      trainSecs: 30*86400,  trainHW: 'Google TPU pods [est.]', gpuCount: 2000,
+      energyKwh: 50000,   energyEst: true },
+  ],
+  clf_text: [
+    { name: 'BERT',    params: 340e6,  paramsEst: false,
+      studyCount: 3.3e9,  studyUnit: 'words',             studyEst: false,
+      trainSecs: 4*86400,   trainHW: '~64 TPU v3 chips', gpuCount: 64,
+      energyKwh: 1500,    energyEst: true },
+    { name: 'RoBERTa', params: 355e6,  paramsEst: false,
+      studyCount: 160e9,  studyUnit: 'words',             studyEst: false,
+      trainSecs: 7*86400,   trainHW: '~1,024 V100 GPUs', gpuCount: 1024,
+      energyKwh: 10000,   energyEst: true },
+  ],
+};
+
+function _aiTerm(name) {
+  const def = AI_DEFINITIONS[name];
+  if (!def) return name;
+  return `<span class="ai-tip-wrap">${name}<span class="ai-tip">${def}</span></span>`;
+}
+
+function _brainScaleAnchor(ratio) {
+  const bigG = ratio * 0.1; // goldfish brain ≈ 0.1 g
+  if (bigG < 200)      return `${bigG.toFixed(0)} g — about a rabbit's brain`;
+  if (bigG < 600)      return `${bigG.toFixed(0)} g — about a cat's brain`;
+  if (bigG < 1600)     return `${(bigG/1000).toFixed(1)} kg — about a human brain`;
+  if (bigG < 6000)     return `${(bigG/1000).toFixed(0)} kg — about an elephant's brain`;
+  if (bigG < 200000)   return `${Math.round(bigG/1000)} kg — heavier than a motorcycle`;
+  if (bigG < 2000000)  return `${Math.round(bigG/1000)} kg — heavier than a car`;
+  return `${(bigG/1000000).toFixed(1)} tonnes — heavier than a school bus`;
+}
+
+function _cmpAiList() {
+  if (_mode === 'image') return _CMP_AIS.image;
+  if (_mode === 'classifier') return _inputMode === 'text' ? _CMP_AIS.clf_text : _CMP_AIS.clf_image;
+  return _CMP_AIS.text;
+}
+
+function _cmpNextAI() {
+  const list = _cmpAiList();
+  _cmpCycleIdx = (_cmpCycleIdx + 1) % list.length;
+  _fillCompareCard();
+}
+
 function _fillCompareCard() {
   const n   = _nParams;
   const dur = _trainTimeMs;
   const pl  = x => x !== 1 ? 's' : '';
 
+  // Pick current AI from catalog
+  const aiList = _cmpAiList();
+  const ai = aiList[_cmpCycleIdx % aiList.length];
+  const est = s => `<span style="color:var(--muted);font-size:.82em;">[est.]</span> ${s}`;
+
+  // Update dynamic title
+  const titleEl = document.getElementById('cmpAiTitle');
+  if (titleEl) titleEl.textContent = ai.name;
+
   // ── 🧠 Brain size ──────────────────────────────────────────────────────────
-  const BIG_AI_PARAMS = {
-    image:      { name: 'Stable Diffusion',  params: 860e6  },
-    classifier: { name: 'ViT-G/14',          params: 1.8e9  },
-    text:       { name: 'ChatGPT (GPT-4)',   params: 1.76e12 },
-  };
-  const bigBrain = BIG_AI_PARAMS[_mode] || BIG_AI_PARAMS.text;
+  const brainRatio  = n > 0 ? Math.round(ai.params / n) : 0;
+  const brainAnchor = brainRatio > 0 ? _brainScaleAnchor(brainRatio) : '';
+  const paramsFmt   = ai.paramsEst
+    ? `${est('')}${_cmpFmtParams(ai.params)}`
+    : `<strong>${_cmpFmtParams(ai.params)}</strong>`;
   document.getElementById('cmpBrainStat').innerHTML =
-    `You: <strong>${_cmpFmtParams(n)}</strong> params &nbsp;·&nbsp; ${bigBrain.name}: <strong>${_cmpFmtParams(bigBrain.params)}</strong> params`;
+    `You: <strong>${_cmpFmtParams(n)}</strong> params &nbsp;·&nbsp; ${_aiTerm(ai.name)}: ${paramsFmt} params`
+    + (brainRatio > 0 ? `<br><span style="color:var(--muted);font-size:.82em;">That's ~${brainRatio.toLocaleString()}× more weights.</span>` : '');
   const cmpBrainXfer = document.getElementById('cmpBrainXfer');
-  cmpBrainXfer.textContent = 'Parameters are the numbers the model adjusts during training to learn patterns. More = more expressive, but needs more data and time.';
+  cmpBrainXfer.innerHTML = `Parameters are the numbers a model adjusts during training to learn patterns. More = more expressive, but needs far more data and time.`
+    + (brainAnchor ? `<br><em>💡 If your model is a goldfish brain (0.1 g), ${ai.name}'s would be: ${brainAnchor}.</em>` : '');
   cmpBrainXfer.style.display = '';
-  _setCmpRatio('cmpBrainRatio', _cmpRatioLine(n, bigBrain.params, 'bigger'));
+  _setCmpRatio('cmpBrainRatio', _cmpRatioLine(n, ai.params, 'bigger'));
 
   // ── 📚 Examples studied ────────────────────────────────────────────────────
-  const BIG_AI_STUDY = {
-    image:     { name: 'Stable Diffusion', count: 2.3e9,  unit: 'images' },
-    finetune:  { name: 'DistilGPT-2',     count: 40e9,   unit: 'words'  },
-    scratch:   { name: 'GPT-3',           count: 3.75e6, unit: 'books'  },
-    smart:     { name: 'GPT-3',           count: 3.75e6, unit: 'books'  },
-    clf_image: { name: 'CLIP',            count: 400e6,  unit: 'images' },
-    clf_text:  { name: 'BERT',            count: 3300e6, unit: 'words'  },
-  };
-  let studyKey = _mode === 'image'      ? 'image'
-               : _mode === 'classifier' ? (_inputMode === 'text' ? 'clf_text' : 'clf_image')
-               : _textTrainingMode === 'finetune' ? 'finetune' : 'scratch';
-  const bigStudy = BIG_AI_STUDY[studyKey] || BIG_AI_STUDY.scratch;
-  const youUnit  = _mode === 'image' ? 'image' : 'example';
+  const youUnit   = _mode === 'image' ? 'image' : 'example';
+  const scrollYrs = Math.round(ai.studyCount / (365.25 * 24 * 3600));
+  const scrollDays = Math.round(ai.studyCount / 86400);
+  const scrollAnchor = scrollYrs >= 1
+    ? `If you viewed one per second, it'd take ${scrollYrs.toLocaleString()} year${scrollYrs !== 1 ? 's' : ''} to scroll through ${_aiTerm(ai.name)}'s data.`
+    : `If you viewed one per second, it'd take ${scrollDays.toLocaleString()} days to scroll through ${_aiTerm(ai.name)}'s data.`;
+  const studyFmt = ai.studyEst
+    ? `<span style="color:var(--muted);font-size:.82em;">[est.]</span> ~${_cmpFmtCount(ai.studyCount)}`
+    : `<strong>~${_cmpFmtCount(ai.studyCount)}</strong>`;
   document.getElementById('cmpStudyStat').innerHTML =
-    `You: <strong>${_nData.toLocaleString()}</strong> ${youUnit}${pl(_nData)} &nbsp;·&nbsp; ${bigStudy.name}: <strong>~${_cmpFmtCount(bigStudy.count)}</strong> ${bigStudy.unit}`;
-  const studyContext = _mode === 'image'
-    ? 'Like comparing one photo to every photo ever taken.'
-    : _textTrainingMode === 'finetune'
-    ? 'You taught it your style on top of what it already knew.'
-    : 'Like comparing one class to all of humanity.';
-  document.getElementById('cmpStudyXfer').textContent = studyContext;
+    `You: <strong>${_nData.toLocaleString()}</strong> ${youUnit}${pl(_nData)} &nbsp;·&nbsp; ${_aiTerm(ai.name)}: ${studyFmt} ${ai.studyUnit}`;
+  document.getElementById('cmpStudyXfer').innerHTML = scrollAnchor;
   document.getElementById('cmpStudyXfer').style.display = '';
-  _setCmpRatio('cmpStudyRatio', _cmpRatioLine(_nData, bigStudy.count, 'more examples'));
+  _setCmpRatio('cmpStudyRatio', _cmpRatioLine(_nData, ai.studyCount, 'more examples'));
 
   // ── ⏱️ Time training ────────────────────────────────────────────────────────
-  const BIG_AI_SECS = {
-    image:      90 * 24 * 3600,   // SD: ~90 days on ~4,000 A100s
-    classifier: 7  * 24 * 3600,   // ViT: ~7 days on TPU pods
-    text:       90 * 24 * 3600,   // GPT-4: ~90 days on ~25,000 A100s
-  };
-  const BIG_AI_HW = {
-    image:      '~4,000 A100 GPUs',
-    classifier: '~1,000 TPU v3 chips',
-    text:       '~25,000 A100 GPUs',
-  };
-  const bigSecs   = BIG_AI_SECS[_mode] || BIG_AI_SECS.text;
-  const yourSecs  = dur / 1000;
-  const BIG_AI_NAME = { image: 'Stable Diffusion', classifier: 'ViT-G/14', text: 'GPT-4' };
-  const bigHW     = BIG_AI_HW[_mode] || BIG_AI_HW.text;
+  const yourSecs    = dur / 1000;
+  const laptopYears = Math.round(ai.trainSecs * ai.gpuCount / (365.25 * 24 * 3600));
+  const timeAnchor  = laptopYears >= 1000
+    ? `One laptop nonstop would take ~${(laptopYears/1000).toFixed(0)},000 years to match that — longer than all recorded human history. [est.]`
+    : laptopYears >= 1
+    ? `One laptop nonstop would take ~${laptopYears.toLocaleString()} years to match that. [est.]`
+    : '';
   document.getElementById('cmpPracStat').innerHTML =
     `You: <strong>${_cmpFmtSeconds(yourSecs)}</strong> on 1 computer`
-    + `<br><span style="color:var(--muted);font-size:.88em;">${BIG_AI_NAME[_mode] || 'GPT-4'}: <strong>~${_cmpFmtSeconds(bigSecs)}</strong> on ${bigHW}</span>`;
-  const BIG_AI_TIME_CTX = {
-    image:      `Stable Diffusion ran on ~4,000 GPUs for 3 months straight. You trained the same type of model in minutes, on your own computer.`,
-    classifier: `ViT-G/14 ran on TPU pods for a week. You built a working image classifier in seconds.`,
-    text:       `ChatGPT ran on ~25,000 computers for 3 months straight. You trained the same kind of model in minutes, on your own computer.`,
-  };
+    + `<br><span style="color:var(--muted);font-size:.88em;">${_aiTerm(ai.name)}: <strong>~${_cmpFmtSeconds(ai.trainSecs)}</strong> on ${ai.trainHW} simultaneously</span>`;
   const pracXfer = document.getElementById('cmpPracXfer');
-  pracXfer.textContent = BIG_AI_TIME_CTX[_mode] || BIG_AI_TIME_CTX.text;
+  pracXfer.innerHTML = timeAnchor || `${_aiTerm(ai.name)} needed massive clusters running for weeks or months. You trained in minutes on your own computer.`;
   pracXfer.style.display = '';
-  _setCmpRatio('cmpPracRatio', _cmpRatioLine(yourSecs, bigSecs, 'longer'));
+  _setCmpRatio('cmpPracRatio', _cmpRatioLine(yourSecs, ai.trainSecs, 'longer'));
 
   // ── ⚡ Energy used (~25 W laptop) — both in kWh ───────────────────────────
-  const BIG_AI_KWH = { image: 200000, classifier: 50000, text: 50000000 };
-  const yourKwh = (dur / 1000) * 25 / 3600 / 1000;   // Wh → kWh
-  const bigKwh  = BIG_AI_KWH[_mode] || BIG_AI_KWH.text;
-  const BIG_AI_ENERGY_CTX = {
-    image:      '≈ powering 20 homes for a year',
-    classifier: '≈ powering 5 homes for a year',
-    text:       '≈ powering 4,500 homes for a year',
-  };
+  const yourKwh = (dur / 1000) * 25 / 3600 / 1000;
+  const bigKwh  = ai.energyKwh;
+  const phoneWh   = 16;
+  const phonePct  = Math.round(yourKwh * 1000 / phoneWh * 100);
+  const phoneAnchor = phonePct < 5   ? `less energy than a 1-minute phone charge`
+    : phonePct < 100 ? `about ${phonePct}% of a full phone charge`
+    : `about ${(phonePct/100).toFixed(1)} full phone charges`;
   document.getElementById('cmpEnergyStat').innerHTML =
-    `You: <strong>~${_cmpFmtKwh(yourKwh)}</strong> <span style="color:var(--muted);font-size:.85em;">(${_cmpEnergyContext(yourKwh)})</span>`
-    + `<br><span style="color:var(--muted);font-size:.88em;">${BIG_AI_NAME[_mode] || 'GPT-4'} training: <strong>~${_cmpFmtKwh(bigKwh)}</strong> <span style="font-size:.85em;">(${BIG_AI_ENERGY_CTX[_mode] || BIG_AI_ENERGY_CTX.text})</span></span>`;
+    `You: <strong>~${_cmpFmtKwh(yourKwh)}</strong> <span style="color:var(--muted);font-size:.82em;">(${phoneAnchor})</span>`
+    + `<br><span style="color:var(--muted);font-size:.88em;">${_aiTerm(ai.name)}: <strong>~${_cmpFmtKwh(bigKwh)}</strong>${ai.energyEst ? ' <span style="font-size:.82em;">[est.]</span>' : ''}</span>`;
   const cmpEnergyXfer = document.getElementById('cmpEnergyXfer');
-  const energyRatio = yourKwh > 0 ? Math.round(bigKwh / yourKwh) : 0;
-  const energyRatioFmt = energyRatio >= 1e9 ? (energyRatio/1e9).toFixed(1)+'B'
-                       : energyRatio >= 1e6 ? (energyRatio/1e6).toFixed(1)+'M'
-                       : energyRatio >= 1e3 ? (energyRatio/1e3).toFixed(1)+'K'
-                       : energyRatio.toLocaleString();
+  const energyRatio    = yourKwh > 0 ? Math.round(bigKwh / yourKwh) : 0;
+  const energyRatioFmt = energyRatio >= 1e9 ? (energyRatio/1e9).toFixed(1)+'B×'
+                       : energyRatio >= 1e6 ? (energyRatio/1e6).toFixed(1)+'M×'
+                       : energyRatio >= 1e3 ? (energyRatio/1e3).toFixed(1)+'K×'
+                       : energyRatio.toLocaleString()+'×';
   cmpEnergyXfer.textContent = energyRatio > 0
-    ? `Big AI used ~${energyRatioFmt}× more energy — same learning process, completely different scale.`
+    ? `${ai.name} used ~${energyRatioFmt} more energy — same learning process, completely different scale.`
     : 'Like comparing a candle to powering a city for a week.';
   cmpEnergyXfer.style.display = '';
   _setCmpRatio('cmpEnergyRatio', _cmpRatioLine(yourKwh, bigKwh, 'more energy'));
 
-  // ── 🪞 Summary ─────────────────────────────────────────────────────────────
+  // ── Cycle button ───────────────────────────────────────────────────────────
+  const cycleWrap = document.getElementById('cmpCycleWrap');
+  if (cycleWrap && aiList.length > 1) {
+    const nextIdx = (_cmpCycleIdx + 1) % aiList.length;
+    const nextAi  = aiList[nextIdx];
+    cycleWrap.innerHTML = `<a href="#" onclick="event.preventDefault();_cmpNextAI()" style="font-size:.75rem;color:var(--primary-mid);text-decoration:none;opacity:.85;">Compare with ${nextAi.name} →</a>`;
+  }
 }
 
 // ── Training mode picker ───────────────────────────────────────────────────────

@@ -85,7 +85,8 @@ def _list_models() -> list:
             if d.is_dir():
                 meta = _read_meta(d.name)
                 if meta:
-                    entries.append(meta)
+                    # Strip sessions blob — only loaded on explicit /api/load
+                    entries.append({k: v for k, v in meta.items() if k != 'sessions'})
     entries.sort(key=lambda e: e.get('created_at', ''), reverse=True)
     return entries
 
@@ -366,6 +367,9 @@ def save_model():
     }
     if state['mode'] == 'classifier':
         meta['labels'] = info.get('labels', [])
+    sessions = data.get('sessions')
+    if sessions and isinstance(sessions, list):
+        meta['sessions'] = sessions
     _write_meta(model_id, meta)
     return jsonify({'ok': True, 'entry': meta})
 
