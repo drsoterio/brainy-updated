@@ -257,14 +257,15 @@
       overflow: hidden; display: flex; align-items: center; justify-content: center;
       flex: 1; min-height: 168px; width: 100%;
     }
-    /* Train-tab canvas: square 2×2 preview, full workspace width */
+    /* Train-tab canvas: landscape 1×4 strip, constrained to ~40vh */
     #imgPreviewWrap .preview-frame {
-      width: 100%; height: auto; aspect-ratio: 1;
+      width: 100%; height: auto; aspect-ratio: 4/1;
+      max-height: min(40vh, 320px);
       flex: none; min-height: unset;
     }
     .preview-frame img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; display: block; }
     /* Live training preview cells — always 2×2 grid */
-    #prevGrid { display: grid; width: 100%; height: 100%; gap: 3px; padding: 4px; box-sizing: border-box; grid-template-columns: repeat(2,1fr); grid-template-rows: repeat(2,1fr); }
+    #prevGrid { display: grid; width: 100%; height: 100%; gap: 3px; padding: 4px; box-sizing: border-box; grid-template-columns: repeat(4,1fr); grid-template-rows: 1fr; }
     #prevGrid canvas { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
     /* ── Epoch step navigator ────────────────────────────────────── */
     #epochNav { flex-direction:column; gap:6px; margin-top:8px; display:none; }
@@ -807,9 +808,8 @@
     .cmp-blist div { font-size: .77rem; color: var(--muted); line-height: 1.4; }
     .cmp-blist .mine { color: var(--primary-dark); font-weight: 700; }
     .cmp-xfer { font-size: .74rem; color: var(--text); background: var(--primary-lite); border-left: 3px solid var(--primary-mid); padding: 5px 8px; border-radius: 0 5px 5px 0; line-height: 1.45; }
-    /* ── Compare panel v2 — compact rows, no card wrapper ──────── */
-    .cmp2-row { padding:6px 0; display:flex; flex-direction:column; gap:3px; border-bottom:1px solid var(--border); }
-    .cmp2-row:last-child { border-bottom:none; }
+    /* ── Compare panel v2 — compact card rows ───────────────────── */
+    .cmp2-row { background:var(--card-bg); border:1px solid var(--border); border-radius:8px; padding:10px 12px; display:flex; flex-direction:column; gap:3px; }
     .cmp2-top { display:flex; align-items:baseline; gap:5px; }
     .cmp2-icon { font-size:.85rem; flex-shrink:0; line-height:1.5; }
     .cmp2-body { flex:1; min-width:0; }
@@ -2469,6 +2469,7 @@ function goTo(n) {
   _render();
   if (_step === 4) _bOnEnterBuild();
   if (_step === 5) _onEnterBrainSave();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function goNext() { goTo(_step + 1); }
 function goBack() { goTo(_step - 1); }
@@ -3539,6 +3540,10 @@ function startTraining() {
   _resetVizState();
   _resetPreview();
   _trainStart = Date.now();
+  setTimeout(() => {
+    const target = document.getElementById('setupPreviewCol') || document.getElementById('lossCurveWrap');
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 120);
   document.getElementById('smartExplainCard')?.classList.add('hidden');
   document.getElementById('smartVizWrap')?.classList.add('hidden');
   const isSmart = _textTrainingMode === 'smart_prompt';
