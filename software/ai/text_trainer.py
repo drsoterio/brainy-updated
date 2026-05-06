@@ -10,6 +10,7 @@ import os
 import random
 import time
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -233,6 +234,44 @@ class TextTrainer:
             n_params    = sum(p.numel() for p in self._model.parameters())
             ckpt_every  = max(1, epochs // 8)
 
+            # Fixed anchor prompt: first 2 tokens of training data → honest per-epoch comparison
+            _anchor_raw  = ' '.join(texts_to_use[0].strip().split()[:2]) if texts_to_use else ''
+            _anchor_loc  = self._to_local(self._tokenizer.encode(_anchor_raw)) if _anchor_raw else [0]
+            _anchor_loc  = _anchor_loc or [0]
+
+            def _mid_sample() -> str | None:
+                """Generate from anchor prompt mid-training (fixed RNG seed, no self.trained guard)."""
+                if self._model is None:
+                    return None
+                rng = torch.get_rng_state()          # save — don't perturb training randomness
+                torch.manual_seed(42)
+                self._model.eval()
+                try:
+                    loc      = list(_anchor_loc)
+                    x        = torch.tensor([loc], device=self.device)
+                    h        = self._model.init_hidden(1, self.device)
+                    gen      = list(loc)
+                    with torch.no_grad():
+                        if len(loc) > 1:
+                            _, h = self._model(x[:, :-1], h)
+                            x    = x[:, -1:]
+                        for _ in range(40):
+                            logits, h = self._model(x, h)
+                            logits    = logits[0, -1] / 0.8
+                            probs     = F.softmax(logits, dim=-1)
+                            nxt       = torch.multinomial(probs, 1).item()
+                            if nxt == self._eos_loc:
+                                break
+                            gen.append(nxt)
+                            x = torch.tensor([[nxt]], device=self.device)
+                    gpt_ids = [self._loc2tok[i] for i in gen if i in self._loc2tok]
+                    return self._tokenizer.decode(gpt_ids, skip_special_tokens=True).strip()
+                except Exception:
+                    return None
+                finally:
+                    self._model.train()
+                    torch.set_rng_state(rng)          # restore
+
             yield {
                 'phase':       'start',
                 'epochs':      epochs,
@@ -277,14 +316,17 @@ class TextTrainer:
                     except Exception:
                         pass
 
+                anchor_sample = _mid_sample()
+
                 yield {
-                    'phase':      'epoch',
-                    'epoch':      epoch,
-                    'epochs':     epochs,
-                    'loss':       round(avg_loss, 4),
-                    'sample':     sample,
-                    'epoch_dur_s': round(epoch_dur_s, 2),
-                    'eta_s':      round(epoch_dur_s * (epochs - epoch)),
+                    'phase':         'epoch',
+                    'epoch':         epoch,
+                    'epochs':        epochs,
+                    'loss':          round(avg_loss, 4),
+                    'sample':        sample,
+                    'anchor_sample': anchor_sample,
+                    'epoch_dur_s':   round(epoch_dur_s, 2),
+                    'eta_s':         round(epoch_dur_s * (epochs - epoch)),
                 }
 
                 if time_budget_s > 0 and (time.time() - train_start_time) >= time_budget_s:
@@ -382,3 +424,77 @@ class TextTrainer:
             'loss':       self.history['loss'][-1] if self.history['loss'] else None,
             'texts':      self._texts,
         }
+
+    def get_scatter_with_gen(self, generated_text: str) -> dict:
+        """Return 2-D PCA points for training texts + generated text, plus distances and insight."""
+        if not self.trained or self._model is None:
+            raise RuntimeError('Model not trained yet.')
+        self._model.eval()
+        hiddens: list = []
+        with torch.no_grad():
+            for text in self._texts:
+                tids = self._tokenizer.encode(text, add_special_tokens=False)
+                loc  = self._to_local(tids) or [0]
+                x    = torch.tensor([loc], device=self.device)
+                _, (h, _) = self._model.lstm(self._model.embed(x))
+                hiddens.append(h[-1, 0].cpu().numpy())
+            gen_tids = self._tokenizer.encode(generated_text, add_special_tokens=False)
+            gen_loc  = self._to_local(gen_tids) or [0]
+            x_gen    = torch.tensor([gen_loc], device=self.device)
+            _, (h_gen, _) = self._model.lstm(self._model.embed(x_gen))
+            gen_hidden = h_gen[-1, 0].cpu().numpy()
+
+        n_train  = len(hiddens)
+        all_h    = np.array(hiddens + [gen_hidden], dtype=np.float32)
+        pts_2d   = _pca2d(all_h)          # list of [x, y]
+        train_pts = pts_2d[:n_train]
+        gen_pt    = pts_2d[n_train]
+
+        # Euclidean distances in 2-D PCA space — consistent with what the student sees
+        dists = [
+            float(np.sqrt((p[0] - gen_pt[0])**2 + (p[1] - gen_pt[1])**2))
+            for p in train_pts
+        ]
+
+        insight = self._scatter_insight(dists, train_pts)
+        return {
+            'train_points': train_pts,
+            'train_labels': [f'text {i+1}' for i in range(n_train)],
+            'gen_point':    gen_pt,
+            'distances':    dists,
+            'insight':      insight,
+        }
+
+    def _scatter_insight(self, distances: list, train_pts: list) -> str:
+        if not distances:
+            return 'Add more training examples to see patterns.'
+        dists    = np.array(distances, dtype=np.float32)
+        mean_d   = float(dists.mean())
+        min_d    = float(dists.min())
+        max_d    = float(dists.max())
+
+        # Spread of training points relative to each other
+        arr = np.array(train_pts, dtype=np.float32)
+        if len(arr) >= 2:
+            # Mean pairwise distance among training examples
+            pair_dists = []
+            for i in range(len(arr)):
+                for j in range(i + 1, len(arr)):
+                    d = float(np.sqrt(((arr[i] - arr[j])**2).sum()))
+                    pair_dists.append(d)
+            spread = float(np.std(pair_dists)) if pair_dists else 0.0
+        else:
+            spread = 0.0
+
+        # Thresholds (PCA space normalised to [-1,1], max possible dist ≈ 2.83)
+        # mean_d > 1.0  → generated point is far from every training example
+        # min_d < 0.4 and max_d > 1.2 → one cluster is close, others are far
+        # spread > 0.7  → training examples are very spread out
+        # default       → generated point sits comfortably near the cluster
+        if mean_d > 1.0:
+            return 'Your AI is making something unlike anything you taught it. Add more examples like the output you want.'
+        if min_d < 0.4 and max_d > 1.2:
+            return 'Your AI is leaning hard on one type of example. Add more variety to your dataset.'
+        if spread > 0.7:
+            return 'Your examples are very different from each other. Add more examples in the style you want most.'
+        return 'Your AI learned the pattern of your examples well. Try giving it harder examples to keep growing.'

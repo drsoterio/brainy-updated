@@ -251,9 +251,10 @@
     .vstep-active { opacity: 1; }
     .vstep-done   { opacity: 1; cursor: pointer; }
     .vstep-locked { opacity: 0.35; pointer-events: none; cursor: not-allowed; }
-    .vstep-header { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--card-bg); cursor: inherit; user-select: none; }
+    .vstep-header { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--card-bg); cursor: pointer; user-select: none; }
     .vstep-done .vstep-header { cursor: pointer; }
     .vstep-done .vstep-header:hover { background: var(--primary-sel); }
+    .vstep-active .vstep-header:hover { background: var(--primary-sel); }
     .vstep-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .95rem; font-weight: 800; flex-shrink: 0; border: 2px solid var(--primary); color: var(--primary-dark); background: transparent; }
     .vstep-active .vstep-num { background: var(--primary); color: #fff; border-color: var(--primary); }
     .vstep-done .vstep-num { background: var(--primary-mid); color: #fff; border-color: var(--primary-mid); }
@@ -443,7 +444,7 @@
     /* Live preview panel */
     .preview-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 16px; background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 18px; }
     #imgPreviewWrap { display: flex; flex-direction: column; position: relative; }
-    #txtPreviewWrap { min-height: 168px; display: flex; flex-direction: column; }
+    #txtPreviewWrap { display: flex; flex-direction: column; gap: 8px; }
     .preview-frame {
       background: #0d0a1a; border: 2px solid var(--border); border-radius: 14px;
       overflow: hidden; display: flex; align-items: center; justify-content: center;
@@ -565,6 +566,31 @@
     }
     .text-sample-box.has-text { color: #94a3b8; }
 
+    /* ── Live text evolution frame (LSTM training) ─────────── */
+    #txtEvoFrame {
+      background: #0f172a; border: 2px solid var(--border); border-radius: 14px;
+      width: 100%; aspect-ratio: 16 / 9; display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .txt-evo-body {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      padding: 28px 36px; min-height: 0;
+    }
+    .txt-evo-out {
+      font-size: 1rem; line-height: 1.75; color: #94a3b8;
+      white-space: pre-wrap; word-break: break-word; width: 100%;
+    }
+    @keyframes txtEvoFadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .txt-evo-out.evo-fade { animation: txtEvoFadeIn 0.45s ease; }
+    .txt-evo-caption {
+      font-size: .82rem; color: var(--primary-dark); font-weight: 600;
+      text-align: center; padding: 5px 8px; flex-shrink: 0;
+      background: var(--primary-lite); border-top: 1px solid var(--primary-mid);
+    }
+
     /* Stage dots */
     .stage-dots { display: flex; gap: 5px; justify-content: center; }
     .stage-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background .4s; }
@@ -616,6 +642,21 @@
     .php-label { font-size: .72rem; font-weight: 700; letter-spacing: .04em;
       text-transform: uppercase; color: var(--primary-dark); margin-bottom: 2px; }
     .php-dyn { color: var(--text); font-weight: 500; }
+
+    /* ── Standard Tests ─────────────────────────────────── */
+    .std-tests-hd { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px; }
+    .std-test-card { background:var(--card-bg); border:1.5px solid var(--border); border-radius:14px; padding:14px 16px; display:flex; flex-direction:column; gap:8px; }
+    .std-test-card + .std-test-card { margin-top:10px; }
+    .std-test-title { font-weight:800; font-size:.9rem; color:var(--text); }
+    .std-test-why { font-size:.8rem; color:var(--muted); line-height:1.5; font-style:italic; }
+    .std-test-lbl { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:2px; }
+    .std-test-prompt { font-size:.88rem; color:var(--primary-dark); background:var(--primary-sel); padding:3px 8px; border-radius:6px; display:inline-block; word-break:break-word; }
+    .std-test-out { font-size:.84rem; color:var(--text); line-height:1.55; background:#0f172a; padding:10px 12px; border-radius:8px; border:1px solid var(--border); max-height:72px; overflow-y:auto; white-space:pre-wrap; word-break:break-word; }
+    .std-verdict { padding:9px 12px; border-radius:8px; font-size:.85rem; font-weight:700; line-height:1.4; display:flex; flex-direction:column; gap:3px; }
+    .std-metric { font-size:.74rem; font-weight:400; opacity:.85; }
+    .std-grade-good { background:oklch(90% 0.07 168); color:oklch(32% 0.12 168); }
+    .std-grade-ok   { background:var(--primary-sel);  color:var(--primary-dark); }
+    .std-grade-weak,.std-grade-stuck { background:oklch(90% 0.07 42); color:oklch(32% 0.12 42); }
 
     /* ── Param reveal fade-in ───────────────────────────── */
     @keyframes param-fadein {
@@ -851,20 +892,19 @@
     .smart-info-text  { font-size: .92rem; color: oklch(38% 0.08 155); line-height: 1.55; }
     .smart-stage-row  { display: flex; align-items: flex-start; gap: 7px; font-size: .92rem; color: oklch(36% 0.1 155); line-height: 1.5; }
     .smart-unavail { background: #fef3c7; border: 1px solid #fde68a; border-radius: 10px; padding: 9px 12px; font-size: .9rem; color: #92400e; line-height: 1.55; }
-    /* Smart Prompt embedding / response scatter — compact so it fits on screen */
+    /* Smart Prompt embedding / response scatter */
     .smart-scatter-frame { display: flex; justify-content: center; flex-shrink: 0; width: 100%; }
     .smart-scatter-svg {
       display: block;
       width: 100%;
-      max-width: min(300px, 100%);
       height: auto;
-      max-height: min(200px, 36vh);
-      aspect-ratio: 100 / 60;
+      aspect-ratio: 16 / 9;
       border-radius: 10px;
       background: #0d0a1a;
     }
     .smart-scatter-svg circle.scatter-pt,
-    .smart-scatter-svg circle.scatter-response { cursor: help; }
+    .smart-scatter-svg circle.scatter-response,
+    .smart-scatter-svg polygon.scatter-response { cursor: help; }
     #smartResponsePlot .smart-scatter-frame { margin-top: 4px; }
     .scatter-tooltip {
       position: fixed;
@@ -1158,6 +1198,11 @@
     .cmp-blist { display: flex; flex-direction: column; gap: 2px; margin-bottom: 5px; }
     .cmp-blist div { font-size: .77rem; color: var(--muted); line-height: 1.4; }
     .cmp-blist .mine { color: var(--primary-dark); font-weight: 700; }
+    .cmp-tech { display:inline-block; margin-top:6px; }
+    .cmp-tech summary { list-style:none; font-size:.72rem; color:var(--muted); cursor:pointer; display:inline-flex; align-items:center; gap:3px; user-select:none; }
+    .cmp-tech summary::-webkit-details-marker { display:none; }
+    .cmp-tech summary::before { content:'ⓘ'; font-size:.8rem; }
+    .cmp-tech-body { font-size:.77rem; color:var(--muted); line-height:1.5; margin-top:5px; padding:7px 10px; background:var(--card-bg); border:1px solid var(--border); border-radius:8px; }
     .cmp-xfer { font-size: .74rem; color: var(--text); background: var(--primary-lite); border-left: 3px solid var(--primary-mid); padding: 5px 8px; border-radius: 0 5px 5px 0; line-height: 1.45; }
     /* ── Compare panel v2 — compact card rows ───────────────────── */
     .cmp2-row { background:var(--card-bg); border:1px solid var(--border); border-radius:8px; padding:10px 12px; display:flex; flex-direction:column; gap:3px; }
@@ -1432,13 +1477,13 @@
         <div class="tmc-card" id="tmcard-smart" onclick="selectTrainingMode('smart_prompt')">
           <div class="tmc-check">✓</div>
           <div class="tmc-head"><span class="tmc-icon">✨</span><span class="tmc-title">Use a pre-trained model</span></div>
-          <div class="tmc-desc">A model already trained on millions of texts. You add your examples to guide its style.</div>
-          <div class="tmc-best"><strong>Best for:</strong> High-quality results right away — no training wait.</div>
+          <div class="tmc-desc">A model already trained on millions of texts. Your examples teach it a style, a topic, a vocabulary, or a way to format answers.</div>
+          <div class="tmc-best"><strong>Best for:</strong> High-quality results right away. No training wait.</div>
           <details class="tmc-more" onclick="event.stopPropagation()">
             <summary>ⓘ Learn more</summary>
             <div class="tmc-more-body">
               <div><strong>How it works:</strong> Your examples are converted into embeddings (lists of numbers that capture their meaning). When you ask something new, the model finds the closest examples using cosine similarity and uses them to guide the output. This is called RAG — Retrieval-Augmented Generation.</div>
-              <div><strong>Result:</strong> High-quality output instantly. Your examples guide the style; the pre-trained model does the heavy lifting.</div>
+              <div><strong>Result:</strong> High-quality output instantly. Your examples can teach a writing style, add new knowledge about a topic, introduce a vocabulary, or shape how answers are formatted. The pre-trained model does the heavy lifting.</div>
             </div>
           </details>
         </div>
@@ -1891,6 +1936,15 @@
 
           <!-- Text preview -->
           <div id="txtPreviewWrap" class="hidden">
+            <!-- Live evolution frame: shown during LSTM training -->
+            <div id="txtEvoFrame" class="hidden">
+              <div class="txt-evo-body">
+                <div class="preview-ph" id="txtEvoPH">Train to see the AI's writing evolve ✨</div>
+                <div class="txt-evo-out hidden" id="txtEvoOut"></div>
+              </div>
+              <div class="txt-evo-caption hidden" id="txtEvoCaption"></div>
+            </div>
+            <!-- Existing: smart-mode status + final sample (after training) -->
             <div class="text-sample-box" id="txtSampleBox">Train your model to see generated text here ✨</div>
           </div>
 
@@ -1917,7 +1971,7 @@
               <div id="smartVizStatus" style="font-size:.77rem;color:var(--primary);font-weight:700;line-height:1.4;"></div>
             </div>
             <div class="smart-scatter-frame">
-              <svg id="embeddingSvg" class="smart-scatter-svg" viewBox="0 0 100 60" preserveAspectRatio="xMidYMid meet"></svg>
+              <svg id="embeddingSvg" class="smart-scatter-svg" viewBox="0 0 160 90" preserveAspectRatio="xMidYMid meet"></svg>
             </div>
             <div style="font-size:.72rem;color:var(--muted);line-height:1.4;text-align:center;">
               Examples that "mean" similar things sit close together. The bot searches this map when you ask something new.
@@ -2078,12 +2132,40 @@
             <!-- Smart Prompt: response position in embedding space -->
             <div id="smartResponsePlot" class="hidden" style="margin-top:12px;">
               <div class="smart-scatter-frame">
-                <svg id="responseEmbedSvg" class="smart-scatter-svg" viewBox="0 0 100 60" preserveAspectRatio="xMidYMid meet"></svg>
+                <svg id="responseEmbedSvg" class="smart-scatter-svg" viewBox="0 0 160 90" preserveAspectRatio="xMidYMid meet"></svg>
               </div>
               <div style="font-size:.78rem;color:var(--muted);margin-top:6px;text-align:center;">
-                The coral dot shows where your bot's answer sits in the pattern map. Closer dots = more similar in meaning.
+                Each dot is a training example. Color shows how close it is to what your AI just wrote.
               </div>
+              <div id="responseScatterInsight" class="hidden"
+                   style="margin-top:8px;padding:9px 13px;background:var(--primary-sel);border:1px solid var(--primary-mid);border-radius:9px;font-size:.82rem;color:var(--primary-dark);font-weight:600;line-height:1.5;"></div>
             </div>
+          </div>
+
+          <!-- Text LSTM scatter (hidden until first generate, not shown in smart_prompt mode) -->
+          <div id="txtScatterWrap" class="hidden" style="margin-top:16px;">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:8px;">
+              <div class="panel-title">🗺️ Embedding Space</div>
+              <div id="txtScatterSubtitle" style="font-size:.78rem;color:var(--muted);">Generate text to see where it lands</div>
+            </div>
+            <div style="background:var(--card-bg);border:1.5px solid var(--border);border-radius:14px;padding:12px 14px;">
+              <svg id="txtScatterSvg" style="width:100%;overflow:visible;display:block;"></svg>
+              <div id="txtScatterLegend" style="display:flex;align-items:center;gap:12px;margin-top:8px;flex-wrap:wrap;"></div>
+            </div>
+            <div id="txtScatterInsight" class="hidden"
+                 style="margin-top:9px;padding:9px 13px;background:var(--primary-sel);border:1px solid var(--primary-mid);border-radius:9px;font-size:.84rem;color:var(--primary-dark);font-weight:600;line-height:1.5;"></div>
+          </div>
+
+          <!-- Standard Tests (text LSTM only, hidden for smart_prompt and image/clf) -->
+          <div id="stdTestsWrap" class="hidden" style="margin-top:16px;">
+            <div class="std-tests-hd">
+              <div>
+                <div class="panel-title" style="margin-bottom:3px;">🧪 Standard Tests</div>
+                <div style="font-size:.82rem;color:var(--muted);line-height:1.4;">The same checks researchers use to evaluate AI. See how your model does.</div>
+              </div>
+              <button class="btn btn-secondary btn-sm" id="runStdTestsBtn" onclick="runStandardTests()" style="flex-shrink:0;">Run Tests</button>
+            </div>
+            <div id="stdTestsResults"></div>
           </div>
         </div>
 
@@ -2478,32 +2560,58 @@
     </div>
 
     <div id="smartExplainCard" class="hidden" style="flex-shrink:0;">
-      <div class="panel-title" style="margin-bottom:6px;">🎯 What you just did — REAL ML</div>
+      <div class="panel-title" style="margin-bottom:6px;">✨ How your AI worked</div>
       <div style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;">
+
+        <!-- Step 1: You gave examples -->
         <div class="cmp-section">
           <div class="cmp-sh">📥 You gave examples</div>
           <div class="cmp-stat" id="seExamples">—</div>
         </div>
+
+        <!-- Step 2: The AI made fingerprints -->
         <div class="cmp-section">
-          <div class="cmp-sh">🔢 ML turned them into vectors</div>
-          <div class="cmp-stat">An ML model called <strong>all-MiniLM-L6-v2</strong> converted each example into a list of <strong>384 numbers</strong> — an <strong>embedding</strong> — capturing its meaning mathematically.</div>
+          <div class="cmp-sh">🔢 The AI turned each example into a fingerprint</div>
+          <div class="cmp-stat">Each example became a unique pattern of numbers the AI can use to remember it.
+            <details class="cmp-tech">
+              <summary>Show technical detail</summary>
+              <div class="cmp-tech-body">This is called an <strong>embedding</strong>. A small AI model (<strong>all-MiniLM-L6-v2</strong>) converts each piece of text into 384 numbers that represent its meaning.</div>
+            </details>
+          </div>
         </div>
+
+        <!-- Step 3: Similar examples cluster together -->
         <div class="cmp-section">
-          <div class="cmp-sh">🗺️ Similar meanings sit close together</div>
-          <div class="cmp-stat">Examples about similar topics land nearby in the map. When you ask something new, the bot measures distance using <strong>cosine similarity</strong>.</div>
+          <div class="cmp-sh">🗺️ Similar examples end up near each other</div>
+          <div class="cmp-stat">Examples about similar topics land close together. When you ask something new, the AI finds the closest examples.
+            <details class="cmp-tech">
+              <summary>Show technical detail</summary>
+              <div class="cmp-tech-body">This is called <strong>nearest-neighbor search</strong>. Distance is measured with <strong>cosine similarity</strong>.</div>
+            </details>
+          </div>
         </div>
+
+        <!-- Step 4: Your examples guide the answer -->
         <div class="cmp-section">
-          <div class="cmp-sh">✏️ Best matches guide LLaVA</div>
-          <div class="cmp-stat">The closest examples + your prompt are sent to <strong>LLaVA</strong> via Ollama. This is <strong>RAG — Retrieval-Augmented Generation</strong>.</div>
+          <div class="cmp-sh">✏️ Your examples guide the answer</div>
+          <div class="cmp-stat">The closest examples and your question are sent to the AI together. It uses your examples to write the answer.
+            <details class="cmp-tech">
+              <summary>Show technical detail</summary>
+              <div class="cmp-tech-body">This is called <strong>RAG (Retrieval-Augmented Generation)</strong>. The language model is <strong>LLaMA 3.2</strong>, running locally via <strong>Ollama</strong>.</div>
+            </details>
+          </div>
         </div>
+
+        <!-- Step 5: This is how real products work -->
         <div class="cmp-section" style="border-bottom:none;">
-          <div class="cmp-sh">🏭 RAG is how real AI products work</div>
+          <div class="cmp-sh">✨ This is how real AI products work too</div>
           <div class="cmp-blist">
             <div>• ChatGPT looking up your conversation history</div>
-            <div>• Customer-support bots searching company docs</div>
+            <div>• Customer support bots searching company docs</div>
             <div>• Coding assistants searching your codebase</div>
           </div>
         </div>
+
       </div>
     </div>
     </div><!-- /sbContent -->
@@ -3323,10 +3431,16 @@ function _syncSetupFlow() {
 
   const isSmart = _textTrainingMode === 'smart_prompt';
 
-  // Vstep container: show when on train tab
+  // Vstep container: show when on train tab; hide step 2 for smart_prompt (no epochs)
   for (let i = 1; i <= 3; i++) {
-    document.getElementById('vstep-' + i)?.classList.toggle('hidden', !onTrain);
+    const hideStep = !onTrain || (isSmart && i === 2);
+    document.getElementById('vstep-' + i)?.classList.toggle('hidden', hideStep);
   }
+  // Renumber step 3 → "2" for smart_prompt (only two visible steps)
+  const vstepNum3El = document.getElementById('vstepNum3');
+  if (vstepNum3El) vstepNum3El.textContent = isSmart ? '2' : '3';
+  // Smart prompt: skip the params stage — advance to stage 3 as soon as data is ready
+  if (isSmart && onTrain && dataReady && _setupStage < 3) _setupStage = 3;
 
   // Row 3 (preview) + loss curve appear only once training has started
   const row3 = document.querySelector('.row3-grid');
@@ -3338,12 +3452,8 @@ function _syncSetupFlow() {
 
   document.getElementById('toParamsBtn')?.classList.add('hidden');
 
-  const smartPrepBtn = document.getElementById('smartPrepareInDataBtn');
-  if (smartPrepBtn) {
-    smartPrepBtn.classList.toggle('hidden', !onTrain || !isSmart || _setupStage < 2);
-    smartPrepBtn.disabled = !dataReady;
-    smartPrepBtn.textContent = dataReady ? '🎯 Prepare My Bot' : 'Add data to continue →';
-  }
+  // smartPrepareInDataBtn retired: smart_prompt path now flows through vstep-3 (shown as "2")
+  document.getElementById('smartPrepareInDataBtn')?.classList.add('hidden');
 
   const showClfStep1 = onTrain && _mode === 'classifier';
   document.getElementById('clfStep1Block')?.classList.toggle('hidden', !showClfStep1);
@@ -3464,23 +3574,19 @@ let _step1Expanded = true;   // step 1 stays open; only collapses when training 
 let _step2Expanded = true;   // default open so epochs are always visible after training
 
 function _vstepSync() {
+  const isSmart = _textTrainingMode === 'smart_prompt';
   let s1, s2, s3;
   if (_setupStage < 3) {
     if (_hasEnoughData()) {
-      // Data ready — show step 2 as active so student sets epochs, step 3 as done (clickable to advance)
       s1 = 'done'; s2 = 'active'; s3 = 'done';
     } else {
-      // No data yet — step 1 active, step 2 always visible, step 3 locked
       s1 = 'active'; s2 = 'active'; s3 = 'locked';
     }
   } else {
-    // Stage 3+: all steps expandable
-    s1 = 'done';
-    s2 = 'active';
-    s3 = 'active';
+    s1 = 'done'; s2 = 'active'; s3 = 'active';
   }
   _vstepApply(1, s1);
-  _vstepApply(2, s2);
+  if (!isSmart) _vstepApply(2, s2);   // step 2 hidden for smart_prompt
   _vstepApply(3, s3);
 }
 
@@ -3490,12 +3596,10 @@ function _vstepApply(step, state) {
   const sum   = document.getElementById('vstepSum' + step);
   if (!vstep) return;
   vstep.className = 'vstep vstep-' + state;
-  // Base visibility: body shown when active
+  // Base visibility: body shown when active; use expand flags for steps 1 & 2
   let showBody = (state === 'active');
-  // Step 1: override with expand flag
-  if (state !== 'locked' && step === 1 && _step1Expanded) showBody = true;
-  // Step 2 (epochs): always visible so student can always see/adjust epoch settings
-  if (step === 2) showBody = true;
+  if (state !== 'locked' && step === 1) showBody = _step1Expanded;
+  if (step === 2) showBody = _step2Expanded;
   if (body) body.classList.toggle('hidden', !showBody);
   if (sum) {
     const showSum = state === 'done';
@@ -3528,9 +3632,7 @@ function _vstepSummary(step) {
 
 function _vstepClick(step) {
   const vstep = document.getElementById('vstep-' + step);
-  // Step 2 is always toggleable (even before data); other steps require 'done' state
   if (!vstep) return;
-  if (step !== 2 && !vstep.classList.contains('vstep-done')) return;
   if (vstep.classList.contains('vstep-locked')) return;
   if (step === 1) {
     _step1Expanded = !_step1Expanded;
@@ -3706,7 +3808,7 @@ function _applyMode() {
   document.getElementById('factText').innerHTML = img
     ? '• More diverse photos = richer variety.<br>• Try uploading 10+ images.'
     : clf ? '• Add at least 5 examples per label.<br>• Better labels and cleaner examples improve accuracy.'
-    : '• Each new line is one data entry.<br>• Garbage in, garbage out: better quality text creates better results.';
+    : '• Each new line is one data entry.<br>• Garbage in, garbage out: if you give the AI bad or messy examples, it will write bad or messy text. The AI can only be as good as what you teach it.';
   _updateCountBadge();
 
   // Step labels: image mode skips Step 1 (no method picker), so relabel to start at 1
@@ -3822,7 +3924,7 @@ function _updateCountBadge() {
     if (vs) vs.textContent = `${_nData} example${_nData !== 1 ? 's' : ''} → click "Prepare My Bot" to embed`;
     if (se) se.textContent =
       `You gave ${_nData} example${_nData !== 1 ? 's' : ''}. ` +
-      `Click "Prepare My Bot" to convert them into 384-dimensional vectors.`;
+      `Click "Prepare My Bot" so the AI can read them and get ready.`;
   }
 }
 
@@ -4204,7 +4306,13 @@ function _resetPreview() {
   document.getElementById('previewBatchCaption')?.classList.add('hidden');
   document.getElementById('interpWrap')?.classList.add('hidden');
   document.getElementById('txtSampleBox').textContent = 'Train your model to see generated text here ✨';
-  document.getElementById('txtSampleBox').classList.remove('has-text');
+  document.getElementById('txtSampleBox').classList.remove('has-text', 'hidden');
+  // Reset evolution frame
+  document.getElementById('txtEvoFrame')?.classList.add('hidden');
+  const _rph = document.getElementById('txtEvoPH');
+  if (_rph) { _rph.textContent = 'Train to see the AI\'s writing evolve ✨'; _rph.classList.remove('hidden'); }
+  document.getElementById('txtEvoOut')?.classList.add('hidden');
+  document.getElementById('txtEvoCaption')?.classList.add('hidden');
   document.getElementById('progFill').style.width = '0%';
   document.getElementById('epochBadge').textContent = '—';
   document.getElementById('lossVal').textContent   = '—';
@@ -4220,6 +4328,18 @@ function _resetPreview() {
   _scatterTipHide();
   _lossHist = []; _accHist = [];
   _drawLoss();
+  document.getElementById('stdTestsWrap')?.classList.add('hidden');
+  document.getElementById('stdTestsResults').innerHTML = '';
+  const _rStdBtn = document.getElementById('runStdTestsBtn');
+  if (_rStdBtn) { _rStdBtn.disabled = false; _rStdBtn.textContent = 'Run Tests'; }
+  document.getElementById('txtScatterWrap')?.classList.add('hidden');
+  document.getElementById('txtScatterInsight')?.classList.add('hidden');
+  const _rScSvg = document.getElementById('txtScatterSvg');
+  if (_rScSvg) _rScSvg.innerHTML = '';
+  const _rScLgd = document.getElementById('txtScatterLegend');
+  if (_rScLgd) _rScLgd.innerHTML = '';
+  const _rScSub = document.getElementById('txtScatterSubtitle');
+  if (_rScSub) _rScSub.textContent = 'Generate text to see where it lands';
 }
 
 // ── Chip helper ────────────────────────────────────────────────────────────────
@@ -4281,9 +4401,11 @@ function startTraining() {
   document.getElementById('stopBtn').classList.remove('hidden');
 
   if (_mode === 'text' && !isSmart) {
-    const box = document.getElementById('txtSampleBox');
-    box.textContent = '⏳ Setting up tokenizer…';
-    box.classList.add('has-text');
+    // Show evolution frame; hide sample box (it reappears after training)
+    document.getElementById('txtEvoFrame').classList.remove('hidden');
+    document.getElementById('txtSampleBox').classList.add('hidden');
+    const _ph = document.getElementById('txtEvoPH');
+    if (_ph) _ph.textContent = '⏳ Setting up tokenizer…';
   }
   if (isSmart) {
     const box = document.getElementById('txtSampleBox');
@@ -4316,8 +4438,8 @@ function startTraining() {
       _showEta('📥 Loading embedding model (all-MiniLM-L6-v2)…');
     }
     if (_mode === 'text' && !isSmart) {
-      const box = document.getElementById('txtSampleBox');
-      box.textContent = '🔄 Training… samples will appear here shortly.';
+      const _ph = document.getElementById('txtEvoPH');
+      if (_ph) _ph.textContent = '🔄 Training… watch the AI learn.';
     }
   });
 
@@ -4398,6 +4520,23 @@ function startTraining() {
       }
       document.getElementById('previewBatchCaption')?.classList.add('hidden');
     }
+    if (_mode === 'text' && !isSmart && d.anchor_sample) {
+      const ph  = document.getElementById('txtEvoPH');
+      const out = document.getElementById('txtEvoOut');
+      const cap = document.getElementById('txtEvoCaption');
+      if (ph && !ph.classList.contains('hidden')) ph.classList.add('hidden');
+      if (out) {
+        out.textContent = d.anchor_sample;
+        out.classList.remove('hidden', 'evo-fade');
+        void out.offsetWidth;
+        out.classList.add('evo-fade');
+      }
+      if (cap) {
+        cap.classList.remove('hidden');
+        const lossStr = d.loss != null ? ` · loss ${d.loss.toFixed(3)}` : '';
+        cap.textContent = `Epoch ${d.epoch} / ${d.epochs}${lossStr}`;
+      }
+    }
     if (_mode === 'text' && d.sample) {
       const box = document.getElementById('txtSampleBox');
       box.textContent = d.sample;
@@ -4407,8 +4546,8 @@ function startTraining() {
     // Capture epoch snapshot for evolution visualization
     if (_mode === 'image' && d.preview) {
       _epochSnapshots.push({ epoch: d.epoch, preview: d.preview, loss: d.loss ?? null });
-    } else if (_mode === 'text' && d.sample) {
-      _epochSnapshots.push({ epoch: d.epoch, sample: d.sample });
+    } else if (_mode === 'text' && (d.anchor_sample || d.sample)) {
+      _epochSnapshots.push({ epoch: d.epoch, sample: d.anchor_sample || d.sample, loss: d.loss ?? null });
     }
     if (_mode === 'image' && _navScrubIdx === null) _navRender();
   });
@@ -4435,6 +4574,14 @@ function startTraining() {
       const box = document.getElementById('txtSampleBox');
       box.textContent = d.sample;
       box.classList.add('has-text');
+      if (!isSmart) {
+        box.classList.remove('hidden');
+        const cap = document.getElementById('txtEvoCaption');
+        if (cap) {
+          const lossStr = _finalLoss != null ? ` · loss ${_finalLoss.toFixed(3)}` : '';
+          cap.textContent = `Training complete · ${_lossHist.length} epochs${lossStr}`;
+        }
+      }
     }
     if (_mode === 'classifier' && d.confusion_matrix && d.labels) {
       _renderConfMatrix(d.labels, d.confusion_matrix);
@@ -4463,8 +4610,8 @@ function startTraining() {
       // Explainer card
       document.getElementById('seExamples').textContent =
         `You gave ${d.n_examples} example${d.n_examples !== 1 ? 's' : ''}. ` +
-        `Each was converted into a ${d.n_dims}-dimensional vector (a list of ${d.n_dims} numbers). ` +
-        `Preparation took ${d.dur_s}s.`;
+        `The AI read each one and made a fingerprint it can compare later. ` +
+        `This took ${d.dur_s}s.`;
       document.getElementById('smartExplainCard').classList.remove('hidden');
     } else if (!isSmart) {
       _updateCurveExplain();
@@ -4794,10 +4941,8 @@ function _attachScatterHover(svg, trainingPoints, responseTip) {
   }
   const move = (ev) => {
     const t = ev.target;
-    if (t.tagName !== 'circle') {
-      _scatterTipHide();
-      return;
-    }
+    const tag = t.tagName;
+    if (tag !== 'circle' && tag !== 'polygon') { _scatterTipHide(); return; }
     if (t.classList.contains('scatter-response')) {
       const tip = responseTip != null && String(responseTip).trim() ? String(responseTip) : 'Response';
       _scatterTipShow(ev, tip);
@@ -4820,7 +4965,7 @@ function _attachScatterHover(svg, trainingPoints, responseTip) {
 function _drawEmbedding(points, highlights) {
   const svg = document.getElementById('embeddingSvg');
   if (!svg || !points.length) return;
-  const W = 100, H = 60, R = 3.2;
+  const W = 160, H = 90, R = 4.0;
   const hiSet = new Set(highlights);
   svg.innerHTML = points.map((p, i) => {
     const cx   = (p.x * W).toFixed(1);
@@ -4833,7 +4978,7 @@ function _drawEmbedding(points, highlights) {
     return `<circle class="scatter-pt" data-idx="${i}" cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" opacity="${op}"><title>${tip}</title></circle>`;
   }).join('') +
   (highlights.length > 0
-    ? `<g pointer-events="none"><text x="2" y="57" font-size="3.5" fill="oklch(60% 0.14 155)" opacity="0.85">● retrieved examples</text></g>`
+    ? `<g pointer-events="none"><text x="3" y="87" font-size="5" fill="oklch(60% 0.14 155)" opacity="0.85">● retrieved examples</text></g>`
     : '');
   _attachScatterHover(svg, points, null);
 }
@@ -4859,52 +5004,135 @@ function _svgWrapLines(text, maxCharsPerLine, maxLines) {
 function _drawResponsePlot(trainingPoints, highlights, responseCoord) {
   const svg = document.getElementById('responseEmbedSvg');
   if (!svg || !trainingPoints.length) return;
-  const W = 100, H = 60, R = 2.6;
-  const hiSet = new Set(highlights);
-  const FS = 1.3, LH = 1.9; // font-size and line-height in SVG units
+  const W = 160, H = 90, R = 3.4;
+  const hiSet  = new Set(highlights);
+  const FS = 2.0, LH = 2.8;
+  const responseTip = responseCoord && responseCoord.text != null ? String(responseCoord.text) : '';
 
-  // Circles first, labels on top
+  // Euclidean distances in 2D PCA/UMAP space (coords already projected from cosine embeddings)
+  const dists = responseCoord
+    ? trainingPoints.map(p => {
+        const dx = p.x - responseCoord.x, dy = p.y - responseCoord.y;
+        return Math.sqrt(dx * dx + dy * dy);
+      })
+    : [];
+  const minD = dists.length ? Math.min(...dists) : 0;
+  const maxD = dists.length ? Math.max(...dists) : 1;
+  const rngD = maxD - minD || 1;
+
+  // Red-orange (close) → indigo-blue (far) colormap
+  function distColor(d) {
+    const t = (d - minD) / rngD;
+    return `rgb(${Math.round(255*(1-t)+90*t)},${Math.round(90*(1-t)+110*t)},${Math.round(40*(1-t)+250*t)})`;
+  }
+
+  // 5-pointed star polygon centred at (cx,cy) with outer radius r
+  function starPoly(cx, cy, r) {
+    const pts = [];
+    for (let i = 0; i < 5; i++) {
+      const oa = (i*72 - 90) * Math.PI / 180, ia = ((i*72+36) - 90) * Math.PI / 180;
+      pts.push(`${(cx+r*Math.cos(oa)).toFixed(2)},${(cy+r*Math.sin(oa)).toFixed(2)}`);
+      pts.push(`${(cx+(r/2.4)*Math.cos(ia)).toFixed(2)},${(cy+(r/2.4)*Math.sin(ia)).toFixed(2)}`);
+    }
+    return pts.join(' ');
+  }
+
   let circles = '', labels = '';
+
+  // Training dots — colored by distance when a response exists, purple otherwise
   trainingPoints.forEach((p, i) => {
-    const cx  = (p.x * W).toFixed(1);
-    const cy  = (p.y * H).toFixed(1);
-    const hi  = hiSet.has(i);
-    const fill = hi ? 'oklch(60% 0.14 155)' : 'oklch(64% 0.18 283)';
-    const r   = hi ? R * 1.45 : R;
-    const tip = _svgXmlEscape(p.text || '');
-    circles += `<circle class="scatter-pt" data-idx="${i}" cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" opacity="0.72"><title>${tip}</title></circle>`;
+    const cx   = (p.x * W).toFixed(1), cy = (p.y * H).toFixed(1);
+    const hi   = hiSet.has(i);
+    const fill = dists.length ? distColor(dists[i]) : (hi ? 'oklch(60% 0.14 155)' : 'oklch(64% 0.18 283)');
+    const r    = hi ? R * 1.3 : R;
+    const tip  = _svgXmlEscape(p.text || '');
+    circles += `<circle class="scatter-pt" data-idx="${i}" cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="rgba(0,0,0,0.2)" stroke-width="0.3" opacity="0.9"><title>${tip}</title></circle>`;
 
     if (hi) {
       const fullText = (p.text || '').slice(0, 140);
-      const lines = _svgWrapLines(fullText, 52, 2);
-      const lx    = parseFloat(cx);
-      const boxH  = lines.length * LH + 0.9;
-      const maxLen = Math.max(...lines.map(l => l.length));
-      const boxW  = Math.min(maxLen * 0.76 + 2, 58);
-      // position label above the dot, clamp so it doesn't go off the top
-      const topY  = Math.max(boxH + 0.5, parseFloat(cy) - r - 1.0);
-      labels += `<rect x="${(lx - boxW/2).toFixed(1)}" y="${(topY - boxH).toFixed(1)}" width="${boxW.toFixed(1)}" height="${boxH.toFixed(1)}" rx="0.8" fill="#0d0a1a" opacity="0.82"/>`;
+      const lines  = _svgWrapLines(fullText, 60, 2);
+      const lx     = parseFloat(cx);
+      const boxH   = lines.length * LH + 1.4;
+      const boxW   = Math.min(Math.max(...lines.map(l => l.length)) * 1.2 + 3, 90);
+      const topY   = Math.max(boxH + 0.5, parseFloat(cy) - r - 1.5);
+      labels += `<rect x="${(lx-boxW/2).toFixed(1)}" y="${(topY-boxH).toFixed(1)}" width="${boxW.toFixed(1)}" height="${boxH.toFixed(1)}" rx="1.2" fill="#0d0a1a" opacity="0.82"/>`;
       lines.forEach((line, j) => {
-        const safe = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        const ty   = (topY - boxH + 1.3 + j * LH).toFixed(1);
-        labels += `<text x="${lx.toFixed(1)}" y="${ty}" text-anchor="middle" font-size="${FS}" fill="oklch(72% 0.14 155)" font-family="system-ui,sans-serif">${safe}</text>`;
+        const safe = line.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        labels += `<text x="${lx.toFixed(1)}" y="${(topY-boxH+2.0+j*LH).toFixed(1)}" text-anchor="middle" font-size="${FS}" fill="oklch(72% 0.14 155)" font-family="system-ui,sans-serif">${safe}</text>`;
       });
     }
   });
 
-  const responseTip = responseCoord && responseCoord.text != null ? String(responseCoord.text) : '';
+  // Response — black star with white outline
   if (responseCoord) {
-    const cx = (responseCoord.x * W).toFixed(1);
-    const cy = (responseCoord.y * H).toFixed(1);
+    const rcx = parseFloat((responseCoord.x * W).toFixed(2));
+    const rcy = parseFloat((responseCoord.y * H).toFixed(2));
     const tip = _svgXmlEscape(responseTip ? ('Response:\n' + responseTip) : 'Response');
-    circles += `<circle class="scatter-response" cx="${cx}" cy="${cy}" r="${(R * 1.9).toFixed(1)}" fill="oklch(65% 0.19 35)" stroke="#fff" stroke-width="0.8" opacity="1"><title>${tip}</title></circle>`;
-    labels += `<text x="2" y="58.5" font-size="1.8" fill="oklch(65% 0.19 35)" opacity="0.9">● response</text>`;
-    labels += `<text x="22" y="58.5" font-size="1.8" fill="oklch(64% 0.18 283)" opacity="0.8">● training examples</text>`;
+    circles += `<polygon class="scatter-response" points="${starPoly(rcx, rcy, R*1.9)}" fill="#0f172a" stroke="#f8fafc" stroke-width="0.8" opacity="0.97"><title>${tip}</title></polygon>`;
   }
 
-  svg.innerHTML = circles + '<g pointer-events="none">' + labels + '</g>';
+  // Legend — gradient bar + star key, top-left of SVG
+  const gid = 'rspG' + (Date.now() & 0xffff);
+  const legend = dists.length ? `
+    <defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="rgb(255,90,40)"/>
+      <stop offset="100%" stop-color="rgb(90,110,250)"/>
+    </linearGradient></defs>
+    <g pointer-events="none">
+      <rect x="3" y="2" width="48" height="5" rx="2" fill="url(#${gid})"/>
+      <text x="3"  y="10.5" font-size="2.5" fill="rgba(148,163,184,.9)">close</text>
+      <text x="51" y="10.5" font-size="2.5" fill="rgba(148,163,184,.9)" text-anchor="end">far</text>
+      <polygon points="${starPoly(57,5,3.2)}" fill="#0f172a" stroke="#94a3b8" stroke-width="0.6"/>
+      <text x="62" y="7" font-size="2.5" fill="rgba(148,163,184,.9)">your response</text>
+    </g>` : '';
+
+  svg.innerHTML = legend + circles + '<g pointer-events="none">' + labels + '</g>';
   document.getElementById('smartResponsePlot').classList.remove('hidden');
-  _attachScatterHover(svg, trainingPoints, responseCoord ? ('Response:\n' + responseTip).trim() : '');
+  _attachScatterHover(svg, trainingPoints, responseTip ? ('Response:\n' + responseTip) : '');
+
+  // Insight sentence
+  const insightEl = document.getElementById('responseScatterInsight');
+  if (insightEl) {
+    if (dists.length) {
+      insightEl.textContent = '💡 ' + _responseScatterInsight(dists, trainingPoints);
+      insightEl.classList.remove('hidden');
+    } else {
+      insightEl.classList.add('hidden');
+    }
+  }
+}
+
+function _responseScatterInsight(dists, trainingPoints) {
+  const mean = dists.reduce((a, b) => a + b, 0) / dists.length;
+  const min  = Math.min(...dists);
+  const max  = Math.max(...dists);
+
+  // Std of pairwise distances among training examples
+  let spread = 0;
+  if (trainingPoints.length >= 2) {
+    const pd = [];
+    for (let i = 0; i < trainingPoints.length; i++)
+      for (let j = i + 1; j < trainingPoints.length; j++) {
+        const dx = trainingPoints[i].x - trainingPoints[j].x;
+        const dy = trainingPoints[i].y - trainingPoints[j].y;
+        pd.push(Math.sqrt(dx*dx + dy*dy));
+      }
+    const pm = pd.reduce((a,b)=>a+b,0)/pd.length;
+    spread = Math.sqrt(pd.reduce((s,d)=>s+(d-pm)**2,0)/pd.length);
+  }
+
+  // Thresholds — 2D coords normalised to [0.06, 0.94]; practical max dist ≈ 1.24
+  // mean > 0.50 : generated point far from everything
+  // min < 0.15 and max > 0.50 : close to one cluster, far from others
+  // spread > 0.25 : training examples themselves are very scattered
+  // default : inside a cluster
+  if (mean > 0.50)
+    return 'Your AI is making something unlike anything you taught it. Add more examples like the output you want.';
+  if (min < 0.15 && max > 0.50)
+    return 'Your AI is leaning hard on one type of example. Add more variety to your dataset.';
+  if (spread > 0.25)
+    return 'Your examples are very different from each other. Add more examples in the style you want most.';
+  return 'Your AI learned the pattern of your examples well. Try giving it harder examples to keep growing.';
 }
 
 // ── Test — generate images ─────────────────────────────────────────────────────
@@ -5040,10 +5268,168 @@ function _fillTestInfo() {
   document.getElementById('smartTrainedBadge')?.classList.toggle('hidden', !isSmart);
   _fillTrainingInsights();
   requestAnimationFrame(_fillComparisonSection);
+  const showStd = _mode === 'text' && !isSmart && _trained;
+  document.getElementById('stdTestsWrap')?.classList.toggle('hidden', !showStd);
+  // Scatter stays hidden until first generate; just ensure it's gone on fresh test load
+  if (!showStd) document.getElementById('txtScatterWrap')?.classList.add('hidden');
 }
 
 function _fillTrainingInsights() {
   _renderViz23();
+}
+
+async function runStandardTests() {
+  const btn = document.getElementById('runStdTestsBtn');
+  const out  = document.getElementById('stdTestsResults');
+  if (!out) return;
+  if (btn) { btn.disabled = true; btn.textContent = 'Running…'; }
+  out.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:8px 0;">Running tests…</div>';
+  try {
+    const res  = await fetch('/api/standard-tests', { method: 'POST' });
+    const data = await res.json();
+    if (!data.ok) {
+      out.innerHTML = `<div style="color:var(--muted);font-size:.85rem;padding:8px 0;">Could not run tests: ${_svgXmlEscape(data.error || 'unknown error')}</div>`;
+      return;
+    }
+    const r = data.results;
+    function card(title, why, prompt, output, verdict, grade, metric) {
+      return `<div class="std-test-card">
+        <div class="std-test-title">${title}</div>
+        <div class="std-test-why">${why}</div>
+        <div>
+          <div class="std-test-lbl">Given to AI</div>
+          <span class="std-test-prompt">${_svgXmlEscape(prompt)}</span>
+        </div>
+        <div>
+          <div class="std-test-lbl">AI wrote</div>
+          <div class="std-test-out">${_svgXmlEscape(output)}</div>
+        </div>
+        <div class="std-verdict std-grade-${grade}">
+          ${_svgXmlEscape(verdict)}
+          <span class="std-metric">${metric}</span>
+        </div>
+      </div>`;
+    }
+    out.innerHTML =
+      card(
+        '1. Style Match',
+        'Does the AI sound like your training examples? Good AI picks up the words, rhythm, and tone of what you teach it.',
+        r.style.prompt, r.style.output, r.style.verdict, r.style.grade,
+        `Word overlap with training: ${r.style.overlap_pct}% (${r.style.training_words} training words)`
+      ) +
+      card(
+        '2. Variety',
+        'Is the AI stuck in a loop? Good AI mixes up its words. If it keeps repeating the same word, it has not learned enough patterns yet.',
+        r.variety.prompt, r.variety.output, r.variety.verdict, r.variety.grade,
+        `Unique words: ${r.variety.unique_words} / ${r.variety.total_words} · Most repeated: "${r.variety.top_word}" (${r.variety.top_pct}%)`
+      ) +
+      card(
+        '3. Continuation',
+        'Can the AI continue a sentence naturally? Good AI builds on what it is given instead of going off in a random direction.',
+        r.continuation.prompt, r.continuation.output, r.continuation.verdict, r.continuation.grade,
+        `Words added after prompt: ${r.continuation.continuation_words}`
+      );
+  } catch (e) {
+    out.innerHTML = `<div style="color:var(--muted);font-size:.85rem;padding:8px 0;">Network error: ${_svgXmlEscape(String(e))}</div>`;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Run Tests Again'; }
+  }
+}
+
+// ── Text LSTM embedding scatter ────────────────────────────────────────────────
+function _renderTxtScatter(data) {
+  const svg       = document.getElementById('txtScatterSvg');
+  const legendEl  = document.getElementById('txtScatterLegend');
+  const insightEl = document.getElementById('txtScatterInsight');
+  const subtitle  = document.getElementById('txtScatterSubtitle');
+  if (!svg || !data) return;
+
+  const trainPts = data.train_points;
+  const genPt    = data.gen_point;
+  const dists    = data.distances;
+
+  const vw = 200, vh = 120;
+  const padL = 16, padT = 8, padR = 8, padB = 16;
+  const plotW = vw - padL - padR, plotH = vh - padT - padB;
+  svg.setAttribute('viewBox', `0 0 ${vw} ${vh}`);
+
+  const sx = x => (padL + ((x + 1) / 2) * plotW).toFixed(2);
+  const sy = y => (padT + ((y + 1) / 2) * plotH).toFixed(2);
+
+  const minD = dists.length ? Math.min(...dists) : 0;
+  const maxD = dists.length ? Math.max(...dists) : 1;
+  const rng  = maxD - minD || 1;
+
+  function distColor(d) {
+    const t = (d - minD) / rng;
+    const r = Math.round(255 * (1 - t) +  90 * t);
+    const g = Math.round( 90 * (1 - t) + 110 * t);
+    const b = Math.round( 40 * (1 - t) + 250 * t);
+    return `rgb(${r},${g},${b})`;
+  }
+
+  // 5-pointed star polygon centred at (cx,cy) with outer radius r
+  function starPts(cx, cy, r) {
+    const pts = [];
+    for (let i = 0; i < 5; i++) {
+      const oa = (i * 72 - 90) * Math.PI / 180;
+      const ia = ((i * 72 + 36) - 90) * Math.PI / 180;
+      pts.push(`${(cx + r * Math.cos(oa)).toFixed(2)},${(cy + r * Math.sin(oa)).toFixed(2)}`);
+      pts.push(`${(cx + (r / 2.4) * Math.cos(ia)).toFixed(2)},${(cy + (r / 2.4) * Math.sin(ia)).toFixed(2)}`);
+    }
+    return pts.join(' ');
+  }
+
+  const axC = 'rgba(255,255,255,0.12)';
+  let html = `<rect x="0" y="0" width="${vw}" height="${vh}" fill="var(--card)" rx="6"/>`;
+  html += `<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="${axC}" stroke-width="0.8"/>`;
+  html += `<line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="${axC}" stroke-width="0.8"/>`;
+  html += `<text x="${padL + plotW / 2}" y="${vh - 2}" text-anchor="middle" font-size="4.5" fill="var(--muted)">PC1</text>`;
+  html += `<text x="3.5" y="${padT + plotH / 2}" text-anchor="middle" font-size="4.5" fill="var(--muted)" transform="rotate(-90,3.5,${padT + plotH / 2})">PC2</text>`;
+
+  // Training dots colored by distance to generated point
+  trainPts.forEach(([x, y], i) => {
+    const col = distColor(dists[i]);
+    const lbl = _svgXmlEscape(data.train_labels[i] || `text ${i + 1}`);
+    html += `<circle cx="${sx(x)}" cy="${sy(y)}" r="3.5" fill="${col}" stroke="rgba(0,0,0,0.3)" stroke-width="0.5" opacity="0.9"><title>${lbl} · dist ${dists[i].toFixed(2)}</title></circle>`;
+  });
+
+  // Generated text — black star with white stroke
+  const gx = parseFloat(sx(genPt[0])), gy = parseFloat(sy(genPt[1]));
+  html += `<polygon points="${starPts(gx, gy, 5.5)}" fill="#0f172a" stroke="#f8fafc" stroke-width="1" opacity="0.97"><title>Generated text</title></polygon>`;
+
+  svg.innerHTML = html;
+
+  // Legend
+  if (legendEl) {
+    const lstarPts = starPts(6, 6, 5);
+    legendEl.innerHTML = `
+      <svg width="90" height="16" style="flex-shrink:0;overflow:visible;" aria-hidden="true">
+        <defs>
+          <linearGradient id="txtScGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stop-color="rgb(255,90,40)"/>
+            <stop offset="100%" stop-color="rgb(90,110,250)"/>
+          </linearGradient>
+        </defs>
+        <rect x="0" y="1" width="70" height="8" rx="3" fill="url(#txtScGrad)"/>
+        <text x="0"  y="16" font-size="5" fill="var(--muted)">close</text>
+        <text x="70" y="16" font-size="5" fill="var(--muted)" text-anchor="end">far</text>
+      </svg>
+      <div style="font-size:.7rem;color:var(--muted);">training examples (by distance)</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:.7rem;color:var(--text);">
+        <svg width="13" height="13" style="flex-shrink:0;overflow:visible;" aria-hidden="true">
+          <polygon points="${lstarPts}" fill="#0f172a" stroke="#94a3b8" stroke-width="1"/>
+        </svg>
+        your generated text
+      </div>`;
+  }
+
+  if (subtitle) subtitle.textContent = 'Each dot is a training example. Color shows how close it is to what your AI just wrote.';
+
+  if (insightEl && data.insight) {
+    insightEl.textContent = '💡 ' + data.insight;
+    insightEl.classList.remove('hidden');
+  }
 }
 
 // ── Viz state reset ────────────────────────────────────────────────────────────
@@ -5865,7 +6251,7 @@ function _fillDeployStats() {
     sub   = 'You fine-tuned a pretrained language model on your text. Here\'s what it learned:';
   } else if (_textTrainingMode === 'smart_prompt') {
     label = '🎯 Text Generator (Smart Prompt / RAG)';
-    sub   = 'You built a RAG pipeline — your examples became embeddings that guide LLaVA.';
+    sub   = 'You gave examples that guide an existing AI. Here is how it works.';
   } else {
     label = '📝 Text Generator (LSTM)';
     sub   = 'You built and trained a token-level LSTM text generator from scratch. Here\'s what it learned:';
@@ -6484,6 +6870,18 @@ async function sendChat() {
   botBubble.textContent = d.ok ? d.text : '⚠ ' + (d.error || 'Error generating response.');
   msgs.appendChild(botBubble);
   msgs.scrollTop = msgs.scrollHeight;
+
+  // For text LSTM: draw embedding scatter with generated text point
+  if (d.ok && _textTrainingMode !== 'smart_prompt' && _mode === 'text') {
+    const scatterWrap = document.getElementById('txtScatterWrap');
+    if (scatterWrap) scatterWrap.classList.remove('hidden');
+    fetch('/api/text-scatter', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ generated_text: d.text }),
+    }).then(r => r.json()).then(sd => {
+      if (sd.ok) _renderTxtScatter(sd);
+    }).catch(() => {});
+  }
 
   // For Smart Prompt: draw response scatter plot + update RAG top-5
   if (d.ok && _textTrainingMode === 'smart_prompt') {

@@ -306,6 +306,119 @@ def generate():
         return jsonify({'ok': False, 'error': str(e)})
 
 
+@app.post('/api/standard-tests')
+def standard_tests():
+    state   = _state()
+    trainer = state.get('trainer')
+    if not trainer:
+        return jsonify({'ok': False, 'error': 'No trainer.'})
+    if state.get('mode') != 'text':
+        return jsonify({'ok': False, 'error': 'Text mode only.'})
+    if not getattr(trainer, 'trained', False):
+        return jsonify({'ok': False, 'error': 'Train the model first.'})
+    try:
+        info           = trainer.get_info()
+        training_texts = info.get('texts', [])
+        training_words = set()
+        for t in training_texts:
+            training_words.update(t.lower().split())
+
+        # ── Test 1: Style Match ────────────────────────────────────────────────
+        anchor = training_texts[0].strip().split()[0] if training_texts else ''
+        out1   = trainer.generate(prompt=anchor, length=200, temperature=0.8)
+        gen_set1 = set(out1.lower().split())
+        overlap  = len(gen_set1 & training_words) / max(len(training_words), 1)
+        if overlap > 0.45:
+            v1, verdict1 = 'good', 'Your AI sounds like your training data. It learned your words well.'
+        elif overlap > 0.2:
+            v1, verdict1 = 'ok', 'Your AI uses some of your words. It is picking up your style.'
+        else:
+            v1, verdict1 = 'weak', 'Your AI does not match your style much yet. Add more training examples and retrain.'
+
+        # ── Test 2: Variety ───────────────────────────────────────────────────
+        out2   = trainer.generate(prompt='', length=200, temperature=0.8)
+        words2 = out2.split()
+        total2 = len(words2)
+        unique2 = len(set(words2))
+        freq2  = {}
+        for w in words2:
+            freq2[w] = freq2.get(w, 0) + 1
+        top_word = max(freq2, key=freq2.get) if freq2 else ''
+        top_pct  = (freq2.get(top_word, 0) / max(total2, 1)) * 100
+        variety_pct = (unique2 / max(total2, 1)) * 100
+        if top_pct > 50:
+            v2, verdict2 = 'stuck', f'Your AI keeps repeating "{top_word}". Try more epochs or more varied training examples.'
+        elif top_pct > 30 or variety_pct < 35:
+            v2, verdict2 = 'ok', 'Some repetition. This is normal for a small model.'
+        else:
+            v2, verdict2 = 'good', 'Good variety. Your AI is not stuck in a loop.'
+
+        # ── Test 3: Continuation ──────────────────────────────────────────────
+        if training_texts:
+            seed_words = training_texts[0].strip().split()
+            prompt3    = ' '.join(seed_words[:3]) if len(seed_words) >= 3 else ' '.join(seed_words)
+        else:
+            prompt3 = ''
+        out3  = trainer.generate(prompt=prompt3, length=200, temperature=0.9)
+        cont  = out3[len(prompt3):].strip() if prompt3 and out3.startswith(prompt3) else out3
+        cont_words = len(cont.split()) if cont.strip() else 0
+        if cont_words >= 10:
+            v3, verdict3 = 'good', 'Your AI continued the sentence naturally.'
+        elif cont_words >= 4:
+            v3, verdict3 = 'ok', 'Short continuation. Your AI needs a few more examples to build momentum.'
+        else:
+            v3, verdict3 = 'weak', 'Your AI stopped too quickly. Try adding more training examples and retraining.'
+
+        return jsonify({'ok': True, 'results': {
+            'style': {
+                'prompt':         anchor or '(no prompt)',
+                'output':         out1,
+                'overlap_pct':    round(overlap * 100, 1),
+                'training_words': len(training_words),
+                'verdict': verdict1, 'grade': v1,
+            },
+            'variety': {
+                'prompt':       '(none)',
+                'output':       out2,
+                'unique_words': unique2,
+                'total_words':  total2,
+                'top_word':     top_word,
+                'top_pct':      round(top_pct, 1),
+                'variety_pct':  round(variety_pct, 1),
+                'verdict': verdict2, 'grade': v2,
+            },
+            'continuation': {
+                'prompt':              prompt3 or '(no prompt)',
+                'output':              out3,
+                'continuation_words':  cont_words,
+                'verdict': verdict3, 'grade': v3,
+            },
+        }})
+    except Exception as exc:
+        return jsonify({'ok': False, 'error': str(exc)})
+
+
+@app.post('/api/text-scatter')
+def text_scatter():
+    data  = request.get_json(force=True) or {}
+    state = _state()
+    trainer = state.get('trainer')
+    if not trainer:
+        return jsonify({'ok': False, 'error': 'No trainer.'})
+    if state.get('mode') != 'text':
+        return jsonify({'ok': False, 'error': 'Text mode only.'})
+    if not getattr(trainer, 'trained', False):
+        return jsonify({'ok': False, 'error': 'Train the model first.'})
+    generated_text = data.get('generated_text', '').strip()
+    if not generated_text:
+        return jsonify({'ok': False, 'error': 'No generated text provided.'})
+    try:
+        result = trainer.get_scatter_with_gen(generated_text)
+        return jsonify({'ok': True, **result})
+    except Exception as exc:
+        return jsonify({'ok': False, 'error': str(exc)})
+
+
 @app.post('/api/closest-training')
 def closest_training():
     data    = request.get_json(force=True) or {}
