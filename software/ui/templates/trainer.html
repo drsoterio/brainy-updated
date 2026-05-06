@@ -93,6 +93,48 @@
     .brand-link:hover { background: var(--primary-sel); }
     .brand-link .brand-logo { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.04em; color: var(--text); }
 
+    /* ── Mascot cycling + brainy-AI color animation ──── */
+    @keyframes mascotFade {
+      0%       { opacity: 1; }
+      16.67%   { opacity: 1; }
+      20%      { opacity: 0; }
+      96.67%   { opacity: 0; }
+      100%     { opacity: 1; }
+    }
+    @keyframes aiColorCycle {
+      0%, 16.67%  { color: #A8A0E8; }
+      20%, 36.67% { color: #5FBFA0; }
+      40%, 56.67% { color: #E89B6F; }
+      60%, 76.67% { color: #5FA5C4; }
+      80%, 96.67% { color: #D88AAB; }
+      100%        { color: #A8A0E8; }
+    }
+    .brainy-mascot-cycle {
+      position: relative;
+      flex-shrink: 0;
+    }
+    .brainy-mascot-cycle img {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+      object-fit: contain;
+      opacity: 0;
+      display: block;
+    }
+    .brainy-mascot-cycle--nav  { width: 26px; height: 26px; }
+    .brainy-mascot-cycle--hero { width: 140px; height: 140px; }
+    .brainy-mascot-cycle img.mc1 { animation: mascotFade 15s  -0s infinite; }
+    .brainy-mascot-cycle img.mc2 { animation: mascotFade 15s -12s infinite; }
+    .brainy-mascot-cycle img.mc3 { animation: mascotFade 15s  -9s infinite; }
+    .brainy-mascot-cycle img.mc4 { animation: mascotFade 15s  -6s infinite; }
+    .brainy-mascot-cycle img.mc5 { animation: mascotFade 15s  -3s infinite; }
+    .brainy-AI { animation: aiColorCycle 15s infinite; }
+    @media (prefers-reduced-motion: reduce) {
+      .brainy-mascot-cycle img      { animation: none !important; opacity: 0; }
+      .brainy-mascot-cycle img.mc1  { opacity: 1; }
+      .brainy-AI                    { animation: none !important; color: #A8A0E8; }
+    }
+
     /* Journey zone */
     .journey-zone { display: flex; align-items: center; justify-content: center; gap: 2px; overflow: hidden; }
     .journey-pill {
@@ -181,7 +223,7 @@
        STEP 0 — HOME
     ───────────────────────────────────────────────── */
     .home-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100vh - 74px); text-align: center; }
-    #mascotSvg { display: block; overflow: visible; margin-bottom: 16px; }
+    .brainy-mascot-cycle--hero { margin-bottom: 16px; }
     .home-title { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.04em; margin-bottom: 10px; }
     .home-tagline { font-size: 1.1rem; color: var(--muted); line-height: 1.6; max-width: 340px; margin: 0 auto 28px; font-weight: 500; }
 
@@ -233,34 +275,12 @@
     .vstep-active .vstep-body { display: block; }
     .vstep-body.hidden { display: none !important; }
 
-    /* ── Per-step vivid identity colors ───────────────────── */
-    /* Step 1 — Lavender */
-    #vstep-1 { border: 1.5px solid rgba(168,160,232,0.55); background: rgba(168,160,232,0.09); }
-    #vstep-1 > .vstep-header { background: rgba(168,160,232,0.14); }
-    #vstep-1 > .vstep-body   { background: rgba(168,160,232,0.07); border-top-color: rgba(168,160,232,0.28); }
-    #vstep-1.vstep-active     { border: 2px solid #A8A0E8; background: rgba(168,160,232,0.14); }
-    #vstep-1.vstep-active > .vstep-header { background: rgba(168,160,232,0.22); }
-    #vstep-1.vstep-active .vstep-num,
-    #vstep-1.vstep-done   .vstep-num { background: #A8A0E8; color: #fff; border-color: #A8A0E8; }
-    #vstep-1.vstep-locked .vstep-num { background: rgba(168,160,232,0.22); color: rgba(168,160,232,0.85); border-color: rgba(168,160,232,0.32); }
-    /* Step 2 — Mint */
-    #vstep-2 { border: 1.5px solid rgba(156,217,199,0.6); background: rgba(156,217,199,0.09); }
-    #vstep-2 > .vstep-header { background: rgba(156,217,199,0.14); }
-    #vstep-2 > .vstep-body   { background: rgba(156,217,199,0.07); border-top-color: rgba(156,217,199,0.28); }
-    #vstep-2.vstep-active     { border: 2px solid #9CD9C7; background: rgba(156,217,199,0.14); }
-    #vstep-2.vstep-active > .vstep-header { background: rgba(156,217,199,0.22); }
-    #vstep-2.vstep-active .vstep-num,
-    #vstep-2.vstep-done   .vstep-num { background: #5bbba3; color: #fff; border-color: #5bbba3; }
-    #vstep-2.vstep-locked .vstep-num { background: rgba(156,217,199,0.22); color: rgba(80,175,150,0.85); border-color: rgba(156,217,199,0.35); }
-    /* Step 3 — Peach */
-    #vstep-3 { border: 1.5px solid rgba(248,183,154,0.6); background: rgba(248,183,154,0.09); }
-    #vstep-3 > .vstep-header { background: rgba(248,183,154,0.14); }
-    #vstep-3 > .vstep-body   { background: rgba(248,183,154,0.07); border-top-color: rgba(248,183,154,0.28); }
-    #vstep-3.vstep-active     { border: 2px solid #F8B79A; background: rgba(248,183,154,0.14); }
-    #vstep-3.vstep-active > .vstep-header { background: rgba(248,183,154,0.22); }
-    #vstep-3.vstep-active .vstep-num,
-    #vstep-3.vstep-done   .vstep-num { background: #e07c4a; color: #fff; border-color: #e07c4a; }
-    #vstep-3.vstep-locked .vstep-num { background: rgba(248,183,154,0.22); color: rgba(225,120,70,0.85); border-color: rgba(248,183,154,0.35); }
+    /* ── Unified theme-following step boxes ───────────────── */
+    .vstep { border-color: var(--primary-mid); background: var(--primary-lite); }
+    .vstep > .vstep-header { background: var(--primary-sel); }
+    .vstep > .vstep-body   { background: var(--primary-lite); border-top-color: var(--primary-mid); }
+    .vstep-active { border: 2.5px solid var(--primary); background: var(--primary-sel); }
+    .vstep-active > .vstep-header { background: color-mix(in oklch, var(--primary-sel) 70%, var(--primary-lite)); }
 
     /* Page-level washes */
     #step-0 { background: linear-gradient(180deg, var(--wash-lavender) 0%, transparent 40%); }
@@ -700,7 +720,7 @@
     .epoch-therm-low, .epoch-therm-high { font-size: .75rem; font-weight: 700; color: var(--muted); flex-shrink: 0; user-select: none; }
     #epochsSlider {
       height: 10px; border-radius: 5px;
-      background: linear-gradient(to right, #A2C9DA 0%, #C3D5B2 13%, #F4C4A0 26%, #dde0ec 26%);
+      background: linear-gradient(to right, #F8B79A 0%, #C3D5B2 13%, #9CD9C7 26%, #dde0ec 26%);
     }
     #epochsSlider::-webkit-slider-thumb { width: 22px; height: 22px; background: #fff; border: 2.5px solid var(--primary); box-shadow: 0 2px 6px rgba(0,0,0,.22); }
     #epochsSlider::-moz-range-thumb    { width: 22px; height: 22px; background: #fff; border: 2.5px solid var(--primary); box-shadow: 0 2px 6px rgba(0,0,0,.22); }
@@ -1282,14 +1302,15 @@
     <div class="brand-zone">
       <a class="brand-link" href="#" onclick="event.preventDefault();goTo(0);"
          aria-label="Go to home page" title="brainy home">
-        <svg id="mascotMini" viewBox="20 25 160 145" width="26" height="26"
-             style="flex-shrink:0;display:block;overflow:visible;" aria-hidden="true">
-          <path id="mascotMiniBody" class="mascot-mini-path"
-            d="M 100 30 C 122 22 150 30 164 52 C 178 74 174 102 162 120 C 150 138 132 152 108 158 C 84 164 58 158 42 142 C 26 126 24 100 30 76 C 36 52 58 36 100 30 Z"
-            fill="oklch(80% 0.12 283)" style="transition:fill 0.6s ease"/>
-        </svg>
+        <div class="brainy-mascot-cycle brainy-mascot-cycle--nav" aria-hidden="true">
+          <img src="/static/mascots/blob.png"   alt="" class="mc1">
+          <img src="/static/mascots/pin.png"    alt="" class="mc2">
+          <img src="/static/mascots/heart.png"  alt="" class="mc3">
+          <img src="/static/mascots/circle.png" alt="" class="mc4">
+          <img src="/static/mascots/cloud.png"  alt="" class="mc5">
+        </div>
         <span class="brand-logo">
-          br<span class="brand-a">a</span><span class="brand-i">i</span>ny
+          br<span class="brainy-AI">ai</span>ny
         </span>
       </a>
     </div>
@@ -1343,28 +1364,17 @@
     <div class="step active" id="step-0">
       <div class="home-wrap">
 
-        <!-- Mascot (exact copy from bba_ai) -->
-        <svg id="mascotSvg" viewBox="0 0 200 200" width="200" height="200" overflow="visible">
-          <defs>
-            <clipPath id="mascotClip"><path id="mascotClipPath" d="M 100 30 C 122 22 150 30 164 52 C 178 74 174 102 162 120 C 150 138 132 152 108 158 C 84 164 58 158 42 142 C 26 126 24 100 30 76 C 36 52 58 36 100 30 Z"/></clipPath>
-            <filter id="mascotShadow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="4" stdDeviation="10" flood-color="var(--primary-mid)" flood-opacity="0.35"/>
-            </filter>
-          </defs>
-          <path id="mascotBody"
-            d="M 100 30 C 122 22 150 30 164 52 C 178 74 174 102 162 120 C 150 138 132 152 108 158 C 84 164 58 158 42 142 C 26 126 24 100 30 76 C 36 52 58 36 100 30 Z"
-            fill="oklch(80% 0.12 283)" filter="url(#mascotShadow)" style="transition:fill 0.6s ease"/>
-          <g clip-path="url(#mascotClip)">
-            <rect x="62" y="70" width="76" height="30" rx="13" fill="white"/>
-            <circle id="mascotEyeL" cx="80"  cy="85" r="11" fill="oklch(80% 0.12 283)" style="transition:fill 0.6s ease"/>
-            <circle cx="86"  cy="78" r="4" fill="white" opacity="0.85"/>
-            <circle id="mascotEyeR" cx="120" cy="85" r="11" fill="oklch(80% 0.12 283)" style="transition:fill 0.6s ease"/>
-            <circle cx="126" cy="78" r="4" fill="white" opacity="0.85"/>
-          </g>
-        </svg>
+        <!-- Mascot cycle -->
+        <div class="brainy-mascot-cycle brainy-mascot-cycle--hero" aria-hidden="true">
+          <img src="/static/mascots/blob.png"   alt="" class="mc1">
+          <img src="/static/mascots/pin.png"    alt="" class="mc2">
+          <img src="/static/mascots/heart.png"  alt="" class="mc3">
+          <img src="/static/mascots/circle.png" alt="" class="mc4">
+          <img src="/static/mascots/cloud.png"  alt="" class="mc5">
+        </div>
 
         <div class="home-title">
-          br<span class="brand-a">a</span><span class="brand-i">i</span>ny
+          br<span class="brainy-AI">ai</span>ny
         </div>
         <div class="home-tagline">Your ideas, your bot, your AI.</div>
 
@@ -1487,8 +1497,8 @@
 
         <!-- ── Mission banner ── -->
         <div id="missionBanner">
-          <div id="missionBannerTitle" style="font-size:.94rem;font-weight:700;color:var(--text);line-height:1.45;">🎯 Your mission: get the best image quality you can.</div>
-          <div id="missionBannerBody" style="font-size:.82rem;color:var(--muted);line-height:1.5;margin-top:3px;">Try different amounts of data, more epochs, see what happens. There's no wrong answer — just experiments.</div>
+          <div id="missionBannerTitle" style="font-size:.94rem;font-weight:700;color:var(--text);line-height:1.45;">💡 A fun thing to try: see how faithfully the AI can recreate your photos.</div>
+          <div id="missionBannerBody" style="font-size:.82rem;color:var(--muted);line-height:1.5;margin-top:3px;">The closer it gets, the more it has learned from your data. But there's no wrong way — just experiments.</div>
         </div>
 
         <!-- ── Vertical step flow ── -->
@@ -7884,17 +7894,17 @@ function _updateMissionBanner() {
   if (!titleEl || !bodyEl) return;
   let title, body;
   if (_mode === 'image') {
-    title = '🎯 Your mission: get the best image quality you can.';
-    body  = "Try different amounts of data, more epochs, see what happens. There's no wrong answer — just experiments.";
+    title = '💡 A fun thing to try: see how faithfully the AI can recreate your photos.';
+    body  = "The closer it gets, the more it has learned from your data. But there's no wrong way — just experiments.";
   } else if (_mode === 'text' && _textTrainingMode === 'smart_prompt') {
-    title = '🎯 Your mission: get the most stylish output you can.';
-    body  = "Try mixing different sources of examples and see how the bot's voice changes.";
+    title = '💡 A fun thing to try: mix examples from different sources and see how the AI\'s voice changes.';
+    body  = "Lines from a poem, a movie script, a friend's text — anything that has a style. No wrong way.";
   } else if (_mode === 'text') {
-    title = '🎯 Your mission: get the most expressive text you can.';
-    body  = "Try different amounts of data, more epochs, see what happens. There's no wrong answer — just experiments.";
+    title = '💡 A fun thing to try: see how expressive the AI\'s writing can get.';
+    body  = "Try different amounts of training data, more rounds, or different examples. There's no wrong way.";
   } else {
-    title = '🎯 Your mission: get the best results you can.';
-    body  = "Try different amounts of data, more epochs, see what happens. There's no wrong answer — just experiments.";
+    title = '💡 A fun thing to try: see how much the AI can learn from your data.';
+    body  = "Try different amounts of data, more epochs, see what happens. There's no wrong way — just experiments.";
   }
   titleEl.textContent = title;
   bodyEl.textContent  = body;
@@ -8963,10 +8973,10 @@ function bldStopBot() {
 // ── Live energy meter ─────────────────────────────────────────────────────────
 
 const _EM_MILESTONES = [
-  { kwh: 0.00005, icon: '📺', label: '30s TV'      },
-  { kwh: 0.0001,  icon: '🔍', label: '1 search'    },
-  { kwh: 0.0005,  icon: '📱', label: 'phone 1min'  },
-  { kwh: 0.005,   icon: '💡', label: '1hr LED'     },
+  { kwh: 0.00005, icon: '📺', label: '30 sec of TV'       },
+  { kwh: 0.0001,  icon: '🔍', label: '1 Google search'    },
+  { kwh: 0.0005,  icon: '📱', label: '1 min phone charge' },
+  { kwh: 0.005,   icon: '💡', label: '1 hr LED bulb'      },
 ];
 let _emPassedSet = new Set();
 
@@ -9503,180 +9513,6 @@ function _libMascotEmptyHtml(msg) {
   <!-- Global hover inspect card -->
   <div id="iicHoverCard"></div>
 
-  <!-- ── Mascot system ────────────────────────────────────────────────────────── -->
-  <!-- Event-triggered celebration mascot (brief, bottom-right) -->
-  <img id="mascotCelebration" src="" alt="" aria-hidden="true"
-       style="position:fixed;bottom:-90px;right:24px;width:72px;height:72px;
-              object-fit:contain;pointer-events:none;z-index:8888;
-              transition:bottom .35s cubic-bezier(.34,1.56,.64,1);opacity:0;">
-  <!-- Floating click mascot (always visible, bottom-right) -->
-  <div id="mascotFloat" style="position:fixed;bottom:22px;right:22px;z-index:8000;
-       width:52px;height:52px;cursor:pointer;user-select:none;" onclick="_mascotFloatClick()" title="say hi">
-    <img id="mascotFloatImg" src="/assets/mascots/blob.png" alt="mascot"
-         style="width:100%;height:100%;object-fit:contain;
-                transition:opacity .2s,transform .2s;display:block;">
-    <div id="mascotBubble" style="position:absolute;bottom:calc(100% + 8px);right:0;
-         background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;
-         padding:8px 12px;font-size:.75rem;font-weight:600;color:#334155;
-         white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.1);
-         pointer-events:none;opacity:0;transition:opacity .2s;
-         max-width:200px;white-space:normal;text-align:center;line-height:1.4;">
-    </div>
-  </div>
-
-  <!-- Sparkle particles container -->
-  <div id="mascotSparkles" style="position:fixed;bottom:90px;right:24px;
-       width:72px;pointer-events:none;z-index:8889;"></div>
-
-  <style>
-    @media (prefers-reduced-motion: reduce) {
-      #mascotCelebration, #mascotFloatImg { transition: none !important; animation: none !important; }
-    }
-    #mascotFloat:hover #mascotFloatImg { opacity: 1 !important; transform: scale(1.1); }
-    @keyframes mascotWiggle { 0%{transform:rotate(0)} 25%{transform:rotate(-10deg)} 75%{transform:rotate(10deg)} 100%{transform:rotate(0)} }
-    @keyframes mascotBounce { 0%,100%{transform:scale(1)} 30%,70%{transform:scale(1.12)} }
-    @keyframes mascotPulse  { 0%,100%{transform:scale(1)} 35%,65%{transform:scale(1.15)} }
-    @keyframes mascotFloat  { 0%{transform:translateY(0)} 50%{transform:translateY(-6px)} 100%{transform:translateY(0)} }
-    @keyframes sparkleUp    { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-48px) scale(.6)} }
-  </style>
-
-  <script>
-  // ── Mascot system ────────────────────────────────────────────────────────────
-  const _M = {
-    pin:    '/assets/mascots/pin.png',
-    blob:   '/assets/mascots/blob.png',
-    cloud:  '/assets/mascots/cloud.png',
-    circle: '/assets/mascots/circle.png',
-    heart:  '/assets/mascots/heart.png',
-  };
-
-  // Tab → float mascot mapping (goTo step number)
-  const _mTabMap = { 0:'blob', 1:'pin', 2:'heart', 3:'cloud', 4:'circle', 5:'pin' };
-
-  // Update float mascot when tab changes (hook into existing goTo)
-  const _mascotOrigGoTo = goTo;
-  window.goTo = function(n) {
-    _mascotOrigGoTo(n);
-    const key = _mTabMap[n] || 'blob';
-    document.getElementById('mascotFloatImg').src = _M[key];
-    // Hide float mascot briefly if celebration is running
-  };
-
-  // ── Celebration (event-triggered) ──────────────────────────────────────────
-  let _mascotCelebRunning = false;
-
-  function _mascotCelebrate(imgKey, animClass, durationMs) {
-    // Celebrations disabled — only keep the static floating mascot at bottom-right
-    _mascotCelebRunning = false;
-  }
-
-  function _mascotSparkles() {
-    const wrap = document.getElementById('mascotSparkles');
-    wrap.innerHTML = '';
-    ['✨','✨','✨'].forEach((s, i) => {
-      const sp = document.createElement('span');
-      sp.textContent = s;
-      sp.style.cssText = `position:absolute;font-size:1rem;left:${10 + i * 22}px;bottom:0;
-        animation:sparkleUp 1.2s ease ${i * 0.3}s forwards;`;
-      wrap.appendChild(sp);
-      setTimeout(() => sp.remove(), 1800);
-    });
-  }
-
-  // ── Trigger 1: Training complete → mint pin ─────────────────────────────────
-  // Hook into _showTrainingReport (already called on done event)
-  const _mascotOrigReport = _showTrainingReport;
-  window._showTrainingReport = function() {
-    _mascotOrigReport();
-    _mascotCelebrate('pin', 'mascotFloat', 2800);
-  };
-
-  // ── Trigger 2: First upload → lavender blob ─────────────────────────────────
-  let _mascotFirstUpload = false;
-  const _mascotOrigUpload = _uploadImg;
-  window._uploadImg = function(dataUrl) {
-    const wasFirst = !_mascotFirstUpload && _nData === 0;
-    const result = _mascotOrigUpload(dataUrl);
-    if (wasFirst) {
-      _mascotFirstUpload = true;
-      setTimeout(() => _mascotCelebrate('blob', 'mascotWiggle', 1800), 600);
-    }
-    return result;
-  };
-
-  // ── Trigger 3: Brain saved → pink cloud ────────────────────────────────────
-  const _mascotOrigSave = saveBrainToLibrary;
-  window.saveBrainToLibrary = function() {
-    const result = _mascotOrigSave();
-    setTimeout(() => _mascotCelebrate('cloud', 'mascotFloat', 2200), 400);
-    return result;
-  };
-
-  // ── Trigger 4: Behavior saved → blue circle ────────────────────────────────
-  const _mascotOrigBldSave = bldSaveBot;
-  window.bldSaveBot = function() {
-    const result = _mascotOrigBldSave();
-    setTimeout(() => _mascotCelebrate('circle', 'mascotBounce', 1800), 400);
-    return result;
-  };
-
-  // ── Trigger 5: First test → peach heart ───────────────────────────────────
-  let _mascotFirstTest = false;
-  function _mascotHookTest() {
-    if (_mascotFirstTest) return;
-    _mascotFirstTest = true;
-    setTimeout(() => _mascotCelebrate('heart', 'mascotPulse', 1800), 300);
-  }
-  const _mascotOrigGenSingle = generateSingle;
-  window.generateSingle = function() {
-    _mascotHookTest();
-    return _mascotOrigGenSingle();
-  };
-  const _mascotOrigGenImages = generateImages;
-  window.generateImages = function() {
-    _mascotHookTest();
-    return _mascotOrigGenImages();
-  };
-  const _mascotOrigSendChat = sendChat;
-  window.sendChat = function() {
-    _mascotHookTest();
-    return _mascotOrigSendChat();
-  };
-
-  // ── Floating mascot click easter egg ───────────────────────────────────────
-  const _mascotPhrases = [
-    'you\'re doing great',
-    'more data = more interesting',
-    'tiny model, big ideas',
-    'experimenting is the whole point',
-    'every training teaches something',
-    'the limit is the lesson',
-    'your idea matters',
-    'small AI, real curiosity',
-    'trade-offs are the heart of ML',
-    'keep tweaking',
-  ];
-  let _mascotLastPhrase = -1;
-  let _mascotBubbleTimer = null;
-
-  function _mascotFloatClick() {
-    const img    = document.getElementById('mascotFloatImg');
-    const bubble = document.getElementById('mascotBubble');
-    // Wiggle
-    img.style.animation = 'none';
-    requestAnimationFrame(() => { img.style.animation = 'mascotWiggle .4s ease'; });
-    setTimeout(() => { img.style.animation = ''; }, 450);
-    // Pick phrase (no repeats)
-    let idx;
-    do { idx = Math.floor(Math.random() * _mascotPhrases.length); }
-    while (idx === _mascotLastPhrase && _mascotPhrases.length > 1);
-    _mascotLastPhrase = idx;
-    bubble.textContent = _mascotPhrases[idx];
-    bubble.style.opacity = '1';
-    clearTimeout(_mascotBubbleTimer);
-    _mascotBubbleTimer = setTimeout(() => { bubble.style.opacity = '0'; }, 3000);
-  }
-  </script>
 
   <script>
   // ── Sidebar collapse ──────────────────────────────────────────────────────────
