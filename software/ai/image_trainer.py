@@ -205,12 +205,15 @@ class ImageTrainer:
 
     def train(
         self,
-        epochs:         int   = 60,
-        lr:             float = 1e-3,
-        batch_size:     int   = 32,
-        latent_dim:     int   = 256,
-        augment_factor: int   = 50,
-        preview_every:  int   = 5,
+        epochs:          int   = 60,
+        lr:              float = 1e-3,
+        batch_size:      int   = 32,
+        latent_dim:      int   = 256,
+        augment_factor:  int   = 50,
+        preview_every:   int   = 5,
+        max_examples:    int   = 0,
+        time_budget_s:   int   = 0,
+        energy_budget_kwh: float = 0,
     ):
         if len(self._pil_imgs) < 2:
             yield {'phase': 'error', 'message': 'Upload at least 2 images to start training.'}
@@ -224,8 +227,11 @@ class ImageTrainer:
             # Cap augmentation to keep per-epoch batch count small (fast epochs).
             aug = min(augment_factor, _AUG_CAP)
 
+            # Apply examples constraint: use first N images if limit set
+            imgs_to_use = self._pil_imgs[:max_examples] if 0 < max_examples < len(self._pil_imgs) else self._pil_imgs
+
             # Build the full augmented dataset ONCE on CPU, then reuse every epoch.
-            cache      = _build_aug_cache(self._pil_imgs, aug)
+            cache      = _build_aug_cache(imgs_to_use, aug)
             dataset    = _CachedDataset(cache)
             dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=0)
 
@@ -238,13 +244,14 @@ class ImageTrainer:
 
             yield {
                 'phase': 'start', 'epochs': epochs,
-                'n_images': len(self._pil_imgs), 'dataset_size': len(dataset),
+                'n_images': len(imgs_to_use), 'dataset_size': len(dataset),
                 'n_params': n_params, 'latent_dim': latent_dim,
                 'device': str(self.device),
                 'batches_per_epoch': len(dataloader),
             }
 
             epoch_dur_s = None
+            train_start_time = time.time()
 
             for epoch in range(1, epochs + 1):
                 epoch_start = time.time()
@@ -281,6 +288,16 @@ class ImageTrainer:
                     'epoch_dur_s': round(epoch_dur_s, 2),
                     'eta_s': round(epoch_dur_s * (epochs - epoch)),
                 }
+
+                if time_budget_s > 0 and (time.time() - train_start_time) >= time_budget_s:
+                    yield {'phase': 'stopped', 'reason': 'time_budget', 'epoch': epoch, 'loss': round(avg_loss, 4)}
+                    return
+                if energy_budget_kwh > 0:
+                    elapsed_s = time.time() - train_start_time
+                    used_kwh = elapsed_s * 25 / 3_600_000
+                    if used_kwh >= energy_budget_kwh:
+                        yield {'phase': 'stopped', 'reason': 'energy_budget', 'epoch': epoch, 'loss': round(avg_loss, 4)}
+                        return
 
             self.trained = True
             self._model.eval()
@@ -335,6 +352,42 @@ class ImageTrainer:
             z = torch.randn(n, self.latent_dim, device=self.device)
             s = self._model.decode(z).cpu()
         return _to_b64_grid(list(s), cols=1 if n == 1 else 4)
+
+    def generate_from_idx(self, idx: int, noise: float = 0.3) -> str:
+        """Encode training image at idx, add noise, decode. Returns single-image b64 PNG."""
+        if not self.trained or self._model is None:
+            raise RuntimeError('Model not trained yet.')
+        if not self._pil_imgs or idx < 0 or idx >= len(self._pil_imgs):
+            raise IndexError('Training image index out of range.')
+        self._model.eval()
+        pil = self._pil_imgs[idx]
+        arr = np.array(pil, dtype=np.float32) / 255.0
+        t = torch.from_numpy(arr).permute(2, 0, 1).unsqueeze(0).to(self.device)
+        with torch.no_grad():
+            mu, logvar = self._model.encode(t)
+            z = mu + torch.randn_like(mu) * noise
+            out = self._model.decode(z).cpu()
+        return _to_b64_grid(list(out), cols=1)
+
+    def closest_training_image(self, img_b64: str) -> dict:
+        """Find the training image with smallest pixel-wise MSE to img_b64."""
+        if not self._pil_imgs:
+            return {'index': None, 'similarity': None}
+        data = img_b64.split(',', 1)[1] if ',' in img_b64 else img_b64
+        raw = base64.b64decode(data)
+        gen_arr = np.array(
+            Image.open(io.BytesIO(raw)).convert('RGB').resize((IMAGE_SIZE, IMAGE_SIZE), Image.BILINEAR),
+            dtype=np.float32,
+        ) / 255.0
+        best_idx, best_mse = 0, float('inf')
+        for i, pil_img in enumerate(self._pil_imgs):
+            train_arr = np.array(pil_img, dtype=np.float32) / 255.0
+            mse = float(np.mean((gen_arr - train_arr) ** 2))
+            if mse < best_mse:
+                best_mse, best_idx = mse, i
+        # 0.3 ≈ typical MSE ceiling for clearly different natural images (0–1 pixel range)
+        similarity = max(0, round((1.0 - min(best_mse / 0.3, 1.0)) * 100))
+        return {'index': best_idx, 'similarity': similarity}
 
     def interpolate(self, steps: int = 10) -> str:
         if not self.trained or self._model is None:

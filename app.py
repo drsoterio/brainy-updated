@@ -217,8 +217,11 @@ def train_stream():
             yield 'event: train_error\ndata: {"message": "No trainer — set a mode first."}\n\n'
         return Response(_err(), mimetype='text/event-stream')
 
-    epochs = int(request.args.get('epochs', 60))
-    lr     = float(request.args.get('lr', 0.001))
+    epochs            = int(request.args.get('epochs', 60))
+    lr                = float(request.args.get('lr', 0.001))
+    max_examples      = int(request.args.get('max_examples', 0))
+    time_budget_s     = int(request.args.get('time_budget_s', 0))
+    energy_budget_kwh = float(request.args.get('energy_budget_kwh', 0))
 
     if state['mode'] == 'image':
         batch_size     = int(request.args.get('batch_size', 8))
@@ -228,7 +231,8 @@ def train_stream():
         gen = state['trainer'].train(
             epochs=epochs, lr=lr, batch_size=batch_size,
             latent_dim=latent_dim, augment_factor=augment_factor,
-            preview_every=preview_every,
+            preview_every=preview_every, max_examples=max_examples,
+            time_budget_s=time_budget_s, energy_budget_kwh=energy_budget_kwh,
         )
     elif isinstance(state['trainer'], ClassifierTrainer):
         batch_size = int(request.args.get('batch_size', 8))
@@ -246,6 +250,8 @@ def train_stream():
         gen = state['trainer'].train(
             epochs=epochs, lr=lr,
             hidden_size=hidden_size, seq_len=seq_len,
+            max_examples=max_examples,
+            time_budget_s=time_budget_s, energy_budget_kwh=energy_budget_kwh,
         )
 
     def _stream():
@@ -298,6 +304,38 @@ def generate():
             return jsonify(result)
     except RuntimeError as e:
         return jsonify({'ok': False, 'error': str(e)})
+
+
+@app.post('/api/closest-training')
+def closest_training():
+    data    = request.get_json(force=True) or {}
+    img_b64 = data.get('image', '')
+    state   = _state()
+    if not state['trainer']:
+        return jsonify({'ok': False, 'error': 'No trainer.'})
+    if state['mode'] != 'image':
+        return jsonify({'ok': False, 'error': 'Image mode only.'})
+    try:
+        result = state['trainer'].closest_training_image(img_b64)
+        return jsonify({'ok': True, **result})
+    except Exception as exc:
+        return jsonify({'ok': False, 'error': str(exc)})
+
+
+@app.post('/api/generate-from-idx')
+def generate_from_idx():
+    data  = request.get_json(force=True) or {}
+    idx   = int(data.get('idx', 0))
+    state = _state()
+    if not state['trainer']:
+        return jsonify({'ok': False, 'error': 'No trainer.'})
+    if state['mode'] != 'image':
+        return jsonify({'ok': False, 'error': 'Image mode only.'})
+    try:
+        image_b64 = state['trainer'].generate_from_idx(idx)
+        return jsonify({'ok': True, 'image': image_b64})
+    except Exception as exc:
+        return jsonify({'ok': False, 'error': str(exc)})
 
 
 # ── Model library ──────────────────────────────────────────────────────────────

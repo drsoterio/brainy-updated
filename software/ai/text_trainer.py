@@ -154,10 +154,14 @@ class TextTrainer:
 
     def train(
         self,
-        epochs:      int   = 80,
-        lr:          float = 0.001,
-        hidden_size: int   = 40,   # repurposed: max tokens per window (clamped 20-60)
-        seq_len:     int   = 50,   # kept for API compatibility, unused
+        epochs:            int   = 80,
+        lr:                float = 0.001,
+        hidden_size:       int   = 40,   # repurposed: max tokens per window (clamped 20-60)
+        seq_len:           int   = 50,   # kept for API compatibility, unused
+        max_examples:      int   = 0,
+        time_budget_s:     int   = 0,
+        energy_budget_khw: float = 0,    # alias kept for compat
+        energy_budget_kwh: float = 0,
         **_,
     ):
         if not self._texts:
@@ -179,9 +183,12 @@ class TextTrainer:
             self._tokenizer.pad_token = self._tokenizer.eos_token
             eos_id = self._tokenizer.eos_token_id
 
+            # Apply examples constraint: use first N texts if limit set
+            texts_to_use = self._texts[:max_examples] if 0 < max_examples < len(self._texts) else self._texts
+
             # Tokenize every training text
             all_seqs: list[list[int]] = []
-            for text in self._texts:
+            for text in texts_to_use:
                 ids = self._tokenizer.encode(text.strip()) + [eos_id]
                 all_seqs.append(ids)
 
@@ -236,6 +243,10 @@ class TextTrainer:
                 'device':      str(self.device),
             }
 
+            # Resolve energy budget (accept both kwh and khw typo)
+            _energy_budget_kwh = energy_budget_kwh or energy_budget_khw
+            train_start_time = time.time()
+
             for epoch in range(1, epochs + 1):
                 epoch_start = time.time()
                 self._model.train()
@@ -275,6 +286,16 @@ class TextTrainer:
                     'epoch_dur_s': round(epoch_dur_s, 2),
                     'eta_s':      round(epoch_dur_s * (epochs - epoch)),
                 }
+
+                if time_budget_s > 0 and (time.time() - train_start_time) >= time_budget_s:
+                    yield {'phase': 'stopped', 'reason': 'time_budget', 'epoch': epoch, 'loss': round(avg_loss, 4)}
+                    return
+                if _energy_budget_kwh > 0:
+                    elapsed_s = time.time() - train_start_time
+                    used_kwh = elapsed_s * 25 / 3_600_000
+                    if used_kwh >= _energy_budget_kwh:
+                        yield {'phase': 'stopped', 'reason': 'energy_budget', 'epoch': epoch, 'loss': round(avg_loss, 4)}
+                        return
 
             self.trained     = True
             final_sample     = self._sample(max_new_tokens=60, temperature=0.9)
