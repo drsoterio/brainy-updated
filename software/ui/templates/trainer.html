@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>brainy</title>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/flubber@0.4.2/build/flubber.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -93,6 +94,9 @@
     .brand-link:hover { background: var(--primary-sel); }
     .brand-link .brand-logo { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.04em; color: var(--text); }
 
+    /* ── Blob gear spin ─────────────────────────────── */
+    @keyframes spin-gear { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
     /* ── Mascot cycling + brainy-AI color animation ──── */
     @keyframes mascotFade {
       0%       { opacity: 1; }
@@ -123,11 +127,11 @@
     }
     .brainy-mascot-cycle--nav  { width: 26px; height: 26px; }
     .brainy-mascot-cycle--hero { width: 140px; height: 140px; }
-    .brainy-mascot-cycle img.mc1 { animation: mascotFade 15s  -0s infinite; }
-    .brainy-mascot-cycle img.mc2 { animation: mascotFade 15s -12s infinite; }
-    .brainy-mascot-cycle img.mc3 { animation: mascotFade 15s  -9s infinite; }
-    .brainy-mascot-cycle img.mc4 { animation: mascotFade 15s  -6s infinite; }
-    .brainy-mascot-cycle img.mc5 { animation: mascotFade 15s  -3s infinite; }
+    .brainy-mascot-cycle img.mc1 { opacity: 1; animation: mascotFade 15s  0s infinite; }
+    .brainy-mascot-cycle img.mc2 {            animation: mascotFade 15s -12s infinite; }
+    .brainy-mascot-cycle img.mc3 {            animation: mascotFade 15s  -9s infinite; }
+    .brainy-mascot-cycle img.mc4 {            animation: mascotFade 15s  -6s infinite; }
+    .brainy-mascot-cycle img.mc5 {            animation: mascotFade 15s  -3s infinite; }
     .brainy-AI { animation: aiColorCycle 15s infinite; }
     @media (prefers-reduced-motion: reduce) {
       .brainy-mascot-cycle img      { animation: none !important; opacity: 0; }
@@ -720,7 +724,12 @@
     .epoch-therm-low, .epoch-therm-high { font-size: .75rem; font-weight: 700; color: var(--muted); flex-shrink: 0; user-select: none; }
     #epochsSlider {
       height: 10px; border-radius: 5px;
-      background: linear-gradient(to right, #F8B79A 0%, #C3D5B2 13%, #9CD9C7 26%, #dde0ec 26%);
+      background: linear-gradient(
+        to right,
+        #F8B79A,
+        #9CD9C7 var(--epochs-fill, 26.3%),
+        #dde0ec var(--epochs-fill, 26.3%)
+      );
     }
     #epochsSlider::-webkit-slider-thumb { width: 22px; height: 22px; background: #fff; border: 2.5px solid var(--primary); box-shadow: 0 2px 6px rgba(0,0,0,.22); }
     #epochsSlider::-moz-range-thumb    { width: 22px; height: 22px; background: #fff; border: 2.5px solid var(--primary); box-shadow: 0 2px 6px rgba(0,0,0,.22); }
@@ -1302,13 +1311,7 @@
     <div class="brand-zone">
       <a class="brand-link" href="#" onclick="event.preventDefault();goTo(0);"
          aria-label="Go to home page" title="brainy home">
-        <div class="brainy-mascot-cycle brainy-mascot-cycle--nav" aria-hidden="true">
-          <img src="/static/mascots/blob.png"   alt="" class="mc1">
-          <img src="/static/mascots/pin.png"    alt="" class="mc2">
-          <img src="/static/mascots/heart.png"  alt="" class="mc3">
-          <img src="/static/mascots/circle.png" alt="" class="mc4">
-          <img src="/static/mascots/cloud.png"  alt="" class="mc5">
-        </div>
+        <div id="brainy-blob-nav" style="width:36px;height:36px;flex-shrink:0;"></div>
         <span class="brand-logo">
           br<span class="brainy-AI">ai</span>ny
         </span>
@@ -1364,14 +1367,8 @@
     <div class="step active" id="step-0">
       <div class="home-wrap">
 
-        <!-- Mascot cycle -->
-        <div class="brainy-mascot-cycle brainy-mascot-cycle--hero" aria-hidden="true">
-          <img src="/static/mascots/blob.png"   alt="" class="mc1">
-          <img src="/static/mascots/pin.png"    alt="" class="mc2">
-          <img src="/static/mascots/heart.png"  alt="" class="mc3">
-          <img src="/static/mascots/circle.png" alt="" class="mc4">
-          <img src="/static/mascots/cloud.png"  alt="" class="mc5">
-        </div>
+        <!-- Mascot (animated blob) -->
+        <div id="brainy-blob-hero" style="margin-bottom:16px;"></div>
 
         <div class="home-title">
           br<span class="brainy-AI">ai</span>ny
@@ -7413,6 +7410,11 @@ function _guessEmoji(name, type) {
 const VIZ_COLORS = ['#a78bfa','#818cf8','#60a5fa','#34d399','#fb923c','#f472b6','#facc15','#38bdf8'];
 
 function updateEpochViz(val) {
+  const sl = document.getElementById('epochsSlider');
+  if (sl) {
+    const pct = ((val - +sl.min) / (+sl.max - +sl.min)) * 100;
+    sl.style.setProperty('--epochs-fill', pct.toFixed(1) + '%');
+  }
   const el = document.getElementById('epochViz');
   if (!el) return;
   const total = 20, lit = Math.ceil(val / 10);
@@ -9545,6 +9547,181 @@ function _libMascotEmptyHtml(msg) {
     _sbApply(next, true);
     localStorage.setItem('brainy_sidebar_collapsed', next ? '1' : '0');
   }
+  </script>
+
+  <!-- ── BrainyBlob — animated morphing mascot ─────────────────────────────
+       Ported from Animated_Logo.html (React version → plain JS).
+       Exact same SHAPES, paths, colors, timings, face composition, gear.
+  ──────────────────────────────────────────────────────────────────────── -->
+  <script>
+  (function() {
+    /* ── Shape definitions (verbatim from Animated_Logo.html, 200×200 viewBox) ── */
+    var SHAPES = [
+      { name: 'Lavender',
+        path: 'M 100 30 C 122 22 150 30 164 52 C 178 74 174 102 162 120 C 150 138 132 152 108 158 C 84 164 58 158 42 142 C 26 126 24 100 30 76 C 36 52 58 36 100 30 Z',
+        fill: '#c9bef0', fillDark: '#9b8dc8' },
+      { name: 'Peach',
+        path: 'M 100 158 C 52 132 18 100 22 68 C 26 42 50 28 74 36 C 86 40 95 52 100 62 C 105 52 114 40 126 36 C 150 28 174 42 178 68 C 182 100 148 132 100 158 Z',
+        fill: '#f5c4a8', fillDark: '#e09070' },
+      { name: 'Robot',
+        /* Computed from source: hx1=54,hx2=146,hy1=22,hy2=112,hcr=32,
+           bx2=146,by2=138, lcr=14, ll1=58,ll2=90,rl1=110,rl2=142,ly2=178 */
+        path: 'M 86 22 L 114 22 Q 146 22 146 54 L 146 112 L 146 138 L 142 138 L 142 178 Q 142 192 128 192 L 124 192 Q 110 192 110 178 L 110 138 L 90 138 L 90 178 Q 90 192 76 192 L 72 192 Q 58 192 58 178 L 58 138 L 54 138 L 54 112 L 54 54 Q 54 22 86 22 Z',
+        fill: '#a8e4c4', fillDark: '#5cba8e' },
+      { name: 'Blue',
+        path: 'M 100 28 C 130 28 158 56 158 86 C 158 122 132 150 100 170 C 68 150 42 122 42 86 C 42 56 70 28 100 28 Z',
+        fill: '#a8cff5', fillDark: '#5a9ed4' },
+      { name: 'Rose',
+        path: 'M 100 34 C 116 22 140 26 150 44 C 164 36 180 50 176 68 C 186 78 184 100 168 108 C 172 126 160 144 144 146 C 134 162 108 166 90 154 C 72 164 46 160 38 142 C 22 136 20 114 32 102 C 22 90 22 68 38 58 C 34 38 52 24 70 28 C 78 18 94 22 100 34 Z',
+        fill: '#f5aac8', fillDark: '#d4608e' },
+    ];
+
+    var HOLD_MS  = 1800;
+    var MORPH_MS = 900;
+
+    function easeInOut(t) {
+      return t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t;
+    }
+
+    /* Gear path — 7 teeth, centered at 0,0 (translated via SVG transform) */
+    function gearPath(outerR, innerR, teeth) {
+      var step = (2 * Math.PI) / teeth;
+      var d = '';
+      for (var i = 0; i < teeth; i++) {
+        var a0 = i * step - step / 4;
+        var a1 = i * step - step / 8;
+        var a2 = i * step + step / 8;
+        var a3 = i * step + step / 4;
+        var pt = function(r, a) { return (r*Math.cos(a)).toFixed(3)+' '+(r*Math.sin(a)).toFixed(3); };
+        d += (i === 0 ? 'M ' : ' L ') + pt(innerR, a0);
+        d += ' L '+pt(outerR,a1)+' L '+pt(outerR,a2)+' L '+pt(innerR,a3);
+      }
+      return d + ' Z';
+    }
+
+    var NS      = 'http://www.w3.org/2000/svg';
+    var GEAR_D  = gearPath(11, 11 * 0.68, 7);
+    var REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var _uid    = 0;
+
+    function createBlob(container, size) {
+      var id = 'bb' + (++_uid);
+      var s0 = SHAPES[0];
+
+      var svg = document.createElementNS(NS, 'svg');
+      svg.setAttribute('viewBox', '0 0 200 200');
+      svg.setAttribute('width',  size);
+      svg.setAttribute('height', size);
+      svg.style.cssText = 'display:block;overflow:visible;flex-shrink:0;';
+      svg.setAttribute('aria-hidden', 'true');
+
+      svg.innerHTML = [
+        '<defs>',
+          '<clipPath id="'+id+'-clip"><path id="'+id+'-cp" d="'+s0.path+'"/></clipPath>',
+          '<filter id="'+id+'-shd" x="-20%" y="-20%" width="140%" height="140%">',
+            '<feDropShadow id="'+id+'-shadow" dx="0" dy="6" stdDeviation="10"',
+            ' flood-color="'+s0.fill+'" flood-opacity="0.5"/>',
+          '</filter>',
+        '</defs>',
+        /* Body */
+        '<path id="'+id+'-body" d="'+s0.path+'" fill="'+s0.fill+'"',
+        ' style="transition:fill 0.6s ease" filter="url(#'+id+'-shd)"/>',
+        /* Antenna — only shown on Robot */
+        '<g id="'+id+'-ant" style="display:none">',
+          '<line x1="100" y1="24" x2="100" y2="12"',
+          ' stroke="'+SHAPES[2].fill+'" stroke-width="5" stroke-linecap="round"/>',
+          '<circle cx="100" cy="8" r="8" fill="#c6e84a"/>',
+        '</g>',
+        /* Face — clipped to body */
+        '<g clip-path="url(#'+id+'-clip)">',
+          '<rect x="62" y="70" width="76" height="30" rx="13" fill="white"/>',
+          '<circle id="'+id+'-eyeL" cx="80"  cy="85" r="11" fill="'+s0.fill+'" style="transition:fill 0.6s ease"/>',
+          '<circle cx="86"  cy="78" r="4" fill="white" opacity="0.85"/>',
+          '<circle id="'+id+'-eyeR" cx="120" cy="85" r="11" fill="'+s0.fill+'" style="transition:fill 0.6s ease"/>',
+          '<circle cx="126" cy="78" r="4" fill="white" opacity="0.85"/>',
+          '<g id="'+id+'-gear" transform="translate(126,52)">',
+            '<g style="animation:spin-gear 5s linear infinite;transform-origin:0px 0px">',
+              '<path d="'+GEAR_D+'" fill="white"/>',
+            '</g>',
+            '<circle id="'+id+'-hub" cx="0" cy="0" r="3.74" fill="'+s0.fillDark+'"/>',
+          '</g>',
+        '</g>',
+      ].join('');
+
+      container.appendChild(svg);
+
+      /* Reduced-motion: stay on static Lavender blob, no rAF loop */
+      if (REDUCED) return;
+
+      var bodyEl   = svg.querySelector('#'+id+'-body');
+      var cpEl     = svg.querySelector('#'+id+'-cp');
+      var eyeLEl   = svg.querySelector('#'+id+'-eyeL');
+      var eyeREl   = svg.querySelector('#'+id+'-eyeR');
+      var gearEl   = svg.querySelector('#'+id+'-gear');
+      var antEl    = svg.querySelector('#'+id+'-ant');
+      var shadowEl = svg.querySelector('#'+id+'-shadow');
+      var hubEl    = svg.querySelector('#'+id+'-hub');
+
+      function paint(shape) {
+        bodyEl.setAttribute('fill', shape.fill);
+        eyeLEl.setAttribute('fill', shape.fill);
+        eyeREl.setAttribute('fill', shape.fill);
+        hubEl.setAttribute('fill', shape.fillDark);
+        shadowEl.setAttribute('flood-color', shape.fill);
+        antEl.style.display = shape.name === 'Robot' ? '' : 'none';
+        gearEl.setAttribute('transform',
+          shape.name === 'Peach' ? 'translate(148,62)' : 'translate(126,52)');
+      }
+
+      var st = { idx: 0, phase: 'hold', elapsed: 0, last: null, interp: null };
+
+      function tick(ts) {
+        if (!st.last) st.last = ts;
+        var dt = Math.min(ts - st.last, 100);
+        st.last    = ts;
+        st.elapsed += dt;
+
+        if (st.phase === 'hold') {
+          if (st.elapsed >= HOLD_MS) {
+            st.elapsed = 0;
+            st.phase   = 'morph';
+            var next   = (st.idx + 1) % SHAPES.length;
+            st.interp  = flubber.interpolate(
+              SHAPES[st.idx].path, SHAPES[next].path, { maxSegmentLength: 4 });
+          }
+        } else {
+          var t    = Math.min(st.elapsed / MORPH_MS, 1);
+          var ease = easeInOut(t);
+          var d    = st.interp(ease);
+          bodyEl.setAttribute('d', d);
+          cpEl.setAttribute('d', d);
+          if (t >= 1) {
+            st.idx     = (st.idx + 1) % SHAPES.length;
+            st.phase   = 'hold';
+            st.elapsed = 0;
+            st.interp  = null;
+            paint(SHAPES[st.idx]);
+          }
+        }
+        requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function init() {
+      if (typeof flubber === 'undefined') { setTimeout(init, 50); return; }
+      var nav  = document.getElementById('brainy-blob-nav');
+      var hero = document.getElementById('brainy-blob-hero');
+      if (nav)  { nav.innerHTML  = ''; createBlob(nav,  36);  }
+      if (hero) { hero.innerHTML = ''; createBlob(hero, 140); }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
   </script>
 </body>
 </html>
